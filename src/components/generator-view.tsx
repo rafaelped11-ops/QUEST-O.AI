@@ -57,7 +57,7 @@ export function GeneratorView() {
   const handleGenerateFromPdf = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      toast({ title: "PDF necessário", description: "Faça o upload de um arquivo.", variant: "destructive" });
+      toast({ title: "Atenção", description: "Selecione um PDF antes de gerar.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -65,12 +65,9 @@ export function GeneratorView() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      
       const pdfText = await extractTextFromPdf(formData);
       
-      if (!pdfText || pdfText.length < 50) {
-        throw new Error("O texto extraído do PDF é muito curto ou o arquivo está protegido.");
-      }
-
       const response = await generateQuestionsFromPdf({
         pdfText,
         questionType,
@@ -85,7 +82,7 @@ export function GeneratorView() {
     } catch (error: any) {
       toast({ 
         title: "Erro na Geração", 
-        description: error.message || "A IA DeepSeek retornou um erro. Verifique sua chave de API.", 
+        description: error.message || "Não foi possível gerar as questões. Tente um arquivo diferente.", 
         variant: "destructive" 
       });
     } finally {
