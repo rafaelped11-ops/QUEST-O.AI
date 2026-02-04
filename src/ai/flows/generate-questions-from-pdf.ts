@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF.
+ * Gera questões de concurso a partir de um documento PDF.
  * Foca em ineditismo e cobertura integral do texto.
  */
 
@@ -40,12 +40,12 @@ const prompt = ai.definePrompt({
   Sua missão é criar {{numberOfQuestions}} questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
   
   DIRETRIZES:
-  1. ABORDAGEM INTEGRAL: Varra todo o documento, não se limite ao início. Crie um simulado que cubra todos os tópicos importantes.
-  2. INEDITISMO: Não use questões conhecidas. Crie novas situações-problema baseadas nas regras do PDF.
+  1. ABORDAGEM INTEGRAL: Varra todo o documento, não se limite ao início. Crie um simulado que cubra todos os tópicos importantes e regras citadas.
+  2. INEDITISMO: Não use questões conhecidas. Crie novas situações-problema ou afirmações técnicas baseadas nas regras do PDF.
   3. FORMATO: {{#if (eq questionType 'A')}}Estilo Cebraspe (Certo ou Errado). A resposta deve ser 'C' ou 'E'.{{else}}Múltipla Escolha (A a E). Forneça 5 opções claras.{{/if}}
   4. DIFICULDADE: {{difficulty}}.
   5. JUSTIFICATIVA: Explique detalhadamente por que o item está correto ou incorreto, citando o conceito do texto.
-  6. PÁGINA: Identifique a página do texto de onde a questão foi extraída.
+  6. PÁGINA: Identifique a página ou seção do texto de onde a questão foi extraída.
   
   DOCUMENTO:
   {{{pdfText}}}`,
@@ -53,5 +53,8 @@ const prompt = ai.definePrompt({
 
 export async function generateQuestionsFromPdf(input: GenerateQuestionsFromPdfInput): Promise<GenerateQuestionsFromPdfOutput> {
   const { output } = await prompt(input);
+  if (!output || !output.questions) {
+    throw new Error("A IA não retornou questões válidas para o conteúdo fornecido.");
+  }
   return output!;
 }

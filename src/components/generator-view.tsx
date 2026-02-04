@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore } from "@/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { extractTextFromPdf } from "@/lib/pdf-actions";
 
 export function GeneratorView() {
   const { user } = useUser();
@@ -60,18 +61,28 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
-      const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const pdfText = await extractTextFromPdf(formData);
+      
+      if (!pdfText || pdfText.length < 50) {
+        throw new Error("O texto extraído do PDF é muito curto para gerar questões.");
+      }
+
       const response = await generateQuestionsFromPdf({
-        pdfText: mockPdfText,
+        pdfText,
         questionType,
         numberOfQuestions: Math.min(60, count),
         difficulty,
       });
+      
       setResults(response.questions);
       setStats({ correct: 0, incorrect: 0 });
       saveToHistory(file.name, "IA (PDF)", response.questions.length);
-    } catch (error) {
-      toast({ title: "Erro", description: "Falha ao gerar questões.", variant: "destructive" });
+      toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas com sucesso.` });
+    } catch (error: any) {
+      toast({ title: "Erro na Geração", description: error.message || "Falha ao processar o PDF.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -93,18 +104,26 @@ export function GeneratorView() {
   };
 
   const handleSuggestTopics = async () => {
-    if (!essayContent && !essayFile) {
-      toast({ title: "Aviso", description: "Forneça um texto base ou carregue um PDF." });
-      return;
-    }
     setLoading(true);
     try {
-      const baseContent = essayFile ? `Conteúdo extraído do arquivo ${essayFile.name}` : essayContent;
+      let baseContent = essayContent;
+      
+      if (essayFile) {
+        const formData = new FormData();
+        formData.append('file', essayFile);
+        baseContent = await extractTextFromPdf(formData);
+      }
+
+      if (!baseContent) {
+        toast({ title: "Aviso", description: "Forneça um texto base ou carregue um PDF.", variant: "destructive" });
+        return;
+      }
+
       const response = await suggestEssayTopics({ content: baseContent });
       setEssayTopics(response.topics);
       toast({ title: "Temas Gerados", description: "Escolha um tema para começar seu treino." });
-    } catch (error) {
-      toast({ title: "Erro", description: "Falha ao sugerir temas.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Falha ao sugerir temas.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -136,7 +155,7 @@ export function GeneratorView() {
       date: new Date().toISOString(),
       count
     };
-    if (user) {
+    if (user && db) {
       addDoc(collection(db, "users", user.uid, "questionnaires"), { ...newItem, createdAt: serverTimestamp() });
     }
     const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
@@ -269,7 +288,7 @@ export function GeneratorView() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground font-bold">Ou Carregar PDF</Label>
-                  <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/20 rounded-lg bg-accent/5 items-center">
+                  <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
                       accept=".pdf" 
@@ -279,7 +298,7 @@ export function GeneratorView() {
                     />
                     <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1">
                       <FileUp className="h-6 w-6 text-accent" />
-                      <span className="text-xs font-bold text-foreground">
+                      <span className="text-xs font-bold text-foreground dark:text-white">
                         {essayFile ? essayFile.name : "Selecionar Documento"}
                       </span>
                     </label>
@@ -288,6 +307,7 @@ export function GeneratorView() {
               </div>
 
               <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                 Sugerir Temas
               </Button>
 
@@ -316,11 +336,12 @@ export function GeneratorView() {
                 <div className="space-y-4">
                   <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-black text-foreground">Pontuação Máxima da Prova</Label>
+                      <Label className="font-black text-foreground dark:text-white">Pontuação Máxima da Prova</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
                     <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
-                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submeter para Correção"}
+                      {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                      Submeter para Correção
                     </Button>
                   </div>
 
