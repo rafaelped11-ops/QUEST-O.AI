@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -79,13 +80,12 @@ export function GeneratorView() {
       
       setResults(response.questions);
       setStats({ correct: 0, incorrect: 0 });
-      saveToHistory(file.name, "IA (PDF)", response.questions.length);
+      saveToHistory(file.name, "DeepSeek IA", response.questions.length);
       toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas.` });
     } catch (error: any) {
-      const is403 = error.message?.includes("403") || error.message?.includes("permission");
       toast({ 
         title: "Erro na Geração", 
-        description: is403 ? "Acesso negado pela API Gemini. Verifique se a 'Generative Language API' está ativa no seu Console do Google Cloud." : error.message, 
+        description: error.message || "A IA DeepSeek retornou um erro. Verifique sua chave de API.", 
         variant: "destructive" 
       });
     } finally {
@@ -159,12 +159,10 @@ export function GeneratorView() {
       userId: user?.uid || "anonymous"
     };
 
-    // Salva localmente primeiro (evita erro 403 imediato se não logado ou erro de API)
     const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
     const history = [newItem, ...existingHistory].slice(0, 20);
     localStorage.setItem("study_history", JSON.stringify(history));
 
-    // Salva no Firestore apenas se estiver logado
     if (user && db) {
       const colRef = collection(db, "users", user.uid, "questionnaires");
       addDocumentNonBlocking(colRef, { 
@@ -201,7 +199,7 @@ export function GeneratorView() {
       <Tabs defaultValue="pdf" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
           <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-            <BrainCircuit className="h-4 w-4" /> Questões por IA
+            <BrainCircuit className="h-4 w-4" /> Questões por DeepSeek
           </TabsTrigger>
           <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
             <Pencil className="h-4 w-4" /> Entrada Manual
@@ -214,7 +212,7 @@ export function GeneratorView() {
         <TabsContent value="pdf">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardDescription className="text-muted-foreground font-medium">Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Carregue seu PDF e deixe a IA DeepSeek criar um simulado exclusivo focado no seu material.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
@@ -324,7 +322,7 @@ export function GeneratorView() {
 
               {essayTopics && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela IA</Label>
+                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela DeepSeek</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
                     <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha seu desafio" /></SelectTrigger>
                     <SelectContent>
@@ -368,7 +366,7 @@ export function GeneratorView() {
                       </div>
                       <div className="space-y-4 text-sm">
                         <div>
-                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback</p>
+                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback Detalhado</p>
                           <p className="leading-relaxed font-medium text-foreground">{essayCorrection.feedback}</p>
                         </div>
                       </div>

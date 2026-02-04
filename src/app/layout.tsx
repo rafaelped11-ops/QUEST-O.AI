@@ -1,11 +1,12 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Questões AÍ - Simulados Inteligentes com Gemini',
-  description: 'Transforme seus PDFs em questões inéditas de concurso usando a Inteligência Artificial do Google Gemini.',
+  title: 'Questões AÍ - Simulados Inteligentes com DeepSeek',
+  description: 'Transforme seus PDFs em questões inéditas de concurso usando a Inteligência Artificial da DeepSeek.',
 };
 
 export default function RootLayout({

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useAuth } from "@/firebase";
@@ -77,7 +78,7 @@ export function Header() {
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-foreground">
-                  <LayoutDashboard className="h-5 w-5 text-accent" />
+                  <History className="h-5 w-5 text-accent" />
                   Meus Questionários
                 </SheetTitle>
                 <SheetDescription>
