@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "A student studying with books and a laptop",
+      "imageUrl": "https://picsum.photos/seed/study/1200/600",
+      "imageHint": "student study"
+    },
+    {
+      "id": "dashboard-placeholder",
+      "description": "Educational icons and books",
+      "imageUrl": "https://picsum.photos/seed/books/600/400",
+      "imageHint": "education books"
+    }
+  ]
+}
