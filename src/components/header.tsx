@@ -63,7 +63,7 @@ export function Header() {
             }
           }}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 text-accent-foreground font-bold bg-accent/10 hover:bg-accent/20 transition-colors">
+              <Button size="sm" className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md transition-all">
                 <History className="h-4 w-4" />
                 <span className="hidden lg:inline text-xs uppercase tracking-wider">Meus Questionários</span>
               </Button>
@@ -109,9 +109,9 @@ export function Header() {
 
         {/* Logo Centralizado Flutuante */}
         <div className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2 z-[60]">
-          <div className="bg-background border-2 border-accent/30 rounded-full p-2 shadow-2xl overflow-hidden h-16 w-16 md:h-20 md:w-20 flex items-center justify-center">
+          <div className="bg-background border-2 border-accent/40 rounded-full p-2 shadow-2xl overflow-hidden h-20 w-20 md:h-24 md:w-24 flex items-center justify-center">
             <img 
-              src="/icon.png" 
+              src="/logo.png" 
               alt="Logo" 
               className="w-full h-full object-contain"
               onError={(e) => {
