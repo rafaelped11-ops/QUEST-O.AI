@@ -3,11 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * QUESTÕES AÍ - SECURITY RULES
-     * Enforces path-based ownership.
-     */
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,20 +11,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Regra simplificada e direta baseada no UID do caminho
     match /users/{userId} {
-      // Allows users to manage their own profile and all nested data.
       allow read, write: if isOwner(userId);
-
-      match /sourceDocuments/{docId} {
+      
+      // Garante acesso recursivo a todas as subcoleções (sourceDocuments, questionnaires, questions)
+      match /{allPaths=**} {
         allow read, write: if isOwner(userId);
-      }
-
-      match /questionnaires/{qId} {
-        allow read, write: if isOwner(userId);
-
-        match /questions/{questionId} {
-          allow read, write: if isOwner(userId);
-        }
       }
     }
   }

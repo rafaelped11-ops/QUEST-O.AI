@@ -64,7 +64,6 @@ export function GeneratorView() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
       const pdfText = await extractTextFromPdf(formData);
       
       if (!pdfText || pdfText.length < 50) {
@@ -83,7 +82,7 @@ export function GeneratorView() {
       saveToHistory(file.name, "IA (PDF)", response.questions.length);
       toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas com sucesso.` });
     } catch (error: any) {
-      toast({ title: "Erro na Geração", description: error.message || "Falha ao processar o PDF.", variant: "destructive" });
+      toast({ title: "Falha na Geração", description: error.message || "Falha ao processar o PDF. Verifique se a API do Gemini está ativa.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -108,18 +107,15 @@ export function GeneratorView() {
     setLoading(true);
     try {
       let baseContent = essayContent;
-      
       if (essayFile) {
         const formData = new FormData();
         formData.append('file', essayFile);
         baseContent = await extractTextFromPdf(formData);
       }
-
       if (!baseContent) {
         toast({ title: "Aviso", description: "Forneça um texto base ou carregue um PDF.", variant: "destructive" });
         return;
       }
-
       const response = await suggestEssayTopics({ content: baseContent });
       setEssayTopics(response.topics);
       toast({ title: "Temas Gerados", description: "Escolha um tema para começar seu treino." });
@@ -153,13 +149,13 @@ export function GeneratorView() {
       fileName: name,
       type,
       date: new Date().toISOString(),
-      count
+      count,
+      userId: user?.uid || "anon"
     };
     if (user && db) {
       const colRef = collection(db, "users", user.uid, "questionnaires");
       addDocumentNonBlocking(colRef, { 
         ...newItem, 
-        userId: user.uid, 
         createdAt: serverTimestamp() 
       });
     }
@@ -344,10 +340,19 @@ export function GeneratorView() {
                       <Label className="font-bold text-foreground dark:text-white">Pontuação Máxima da Prova</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
-                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
+                    <Button 
+                      onClick={handleCorrectEssay} 
+                      className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md disabled:opacity-100" 
+                      disabled={loading || !userEssay || !selectedTopic}
+                    >
                       {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                       Submeter para Correção
                     </Button>
+                    {(!userEssay || !selectedTopic) && (
+                      <p className="text-[10px] text-center text-muted-foreground font-medium italic">
+                        Escreva seu texto e selecione um tema para habilitar a correção.
+                      </p>
+                    )}
                   </div>
 
                   {essayCorrection && (
