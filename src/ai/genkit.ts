@@ -1,6 +1,6 @@
 
 import { genkit } from 'genkit';
-import { openai } from 'genkitx-openai';
+import { openAI } from 'genkitx-openai';
 
 /**
  * Configuração central do Genkit utilizando a API da DeepSeek através do plugin OpenAI.
@@ -11,7 +11,7 @@ const deepseekKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
 
 export const ai = genkit({
   plugins: [
-    openai({
+    openAI({
       apiKey: deepseekKey,
       baseURL: 'https://api.deepseek.com',
     }),
