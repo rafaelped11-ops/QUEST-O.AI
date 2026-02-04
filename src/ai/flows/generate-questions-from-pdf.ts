@@ -32,13 +32,9 @@ const GenerateQuestionsFromPdfOutputSchema = z.object({
 
 export type GenerateQuestionsFromPdfOutput = z.infer<typeof GenerateQuestionsFromPdfOutputSchema>;
 
-const PromptInputSchema = GenerateQuestionsFromPdfInputSchema.extend({
-  isTypeA: z.boolean().describe('True if it is a Cebraspe style question (C/E).'),
-});
-
 const prompt = ai.definePrompt({
   name: 'generateQuestionsFromPdfPrompt',
-  input: { schema: PromptInputSchema },
+  input: { schema: GenerateQuestionsFromPdfInputSchema.extend({ isTypeA: z.boolean() }) },
   output: { schema: GenerateQuestionsFromPdfOutputSchema },
   prompt: `Você é um especialista em bancas examinadoras de concursos de alto nível (Cebraspe, FGV, FCC).
   Sua missão é criar {{numberOfQuestions}} questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
@@ -56,12 +52,15 @@ const prompt = ai.definePrompt({
 });
 
 export async function generateQuestionsFromPdf(input: GenerateQuestionsFromPdfInput): Promise<GenerateQuestionsFromPdfOutput> {
+  // Chamada ao prompt definido com Genkit e DeepSeek
   const { output } = await prompt({
     ...input,
     isTypeA: input.questionType === 'A',
   });
+  
   if (!output || !output.questions) {
     throw new Error("A IA não retornou questões válidas para o conteúdo fornecido.");
   }
+  
   return output!;
 }
