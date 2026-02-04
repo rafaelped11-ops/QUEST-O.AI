@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Header } from "@/components/header";
@@ -18,9 +17,9 @@ export default function Home() {
         <GeneratorView />
       </main>
       
-      <footer className="mt-20 border-t py-12 bg-card">
+      <footer className="mt-20 border-t py-12 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">© 2024 Questões AÍ - O seu simulador inteligente para concursos.</p>
+          <p className="text-muted-foreground text-sm font-medium">© 2024 Questões AÍ - O seu simulador inteligente para concursos.</p>
         </div>
       </footer>
     </div>
