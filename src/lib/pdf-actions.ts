@@ -15,7 +15,13 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
     const buffer = Buffer.from(bytes);
     
     // Processamento do PDF no servidor usando pdf-parse
-    const data = await pdf(buffer);
+    // Tratamento específico para erros de estrutura do PDF (como bad XRef)
+    const data = await pdf(buffer).catch((err: any) => {
+      if (err.message && (err.message.includes('XRef') || err.message.includes('xref'))) {
+        throw new Error("O PDF possui uma estrutura corrompida ou incompatível (bad XRef). Tente salvar o arquivo novamente como PDF ou use um arquivo diferente.");
+      }
+      throw err;
+    });
     
     if (!data || !data.text) {
       throw new Error("O PDF parece estar vazio ou não contém texto extraível.");
@@ -27,14 +33,13 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
       .trim();
 
     if (cleanedText.length < 10) {
-      throw new Error("O texto extraído é insuficiente para gerar questões.");
+      throw new Error("O texto extraído é insuficiente para gerar questões. Verifique se o documento não contém apenas imagens (scans sem OCR).");
     }
 
     return cleanedText;
   } catch (error: any) {
     console.error('Erro na extração de PDF:', error);
-    // Retornamos a mensagem de erro real para o cliente
     const errorMsg = error?.message || 'Erro desconhecido ao processar o arquivo';
-    throw new Error(`Falha ao ler PDF: ${errorMsg}`);
+    throw new Error(errorMsg);
   }
 }
