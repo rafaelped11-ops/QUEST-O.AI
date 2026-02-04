@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * Gera questões de concurso a partir de um documento PDF.
+ * Gera questões de concurso a partir de um documento PDF utilizando DeepSeek.
  * Foca em ineditismo e cobertura integral do texto.
  */
 
@@ -32,7 +32,6 @@ const GenerateQuestionsFromPdfOutputSchema = z.object({
 
 export type GenerateQuestionsFromPdfOutput = z.infer<typeof GenerateQuestionsFromPdfOutputSchema>;
 
-// Input extended with a flag to avoid logic in Handlebars (eq helper is not available by default)
 const PromptInputSchema = GenerateQuestionsFromPdfInputSchema.extend({
   isTypeA: z.boolean().describe('True if it is a Cebraspe style question (C/E).'),
 });
@@ -57,7 +56,6 @@ const prompt = ai.definePrompt({
 });
 
 export async function generateQuestionsFromPdf(input: GenerateQuestionsFromPdfInput): Promise<GenerateQuestionsFromPdfOutput> {
-  // Passamos isTypeA diretamente para o prompt para seguir as diretrizes de Handlebars logic-less
   const { output } = await prompt({
     ...input,
     isTypeA: input.questionType === 'A',
