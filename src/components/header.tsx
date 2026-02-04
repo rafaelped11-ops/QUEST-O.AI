@@ -3,7 +3,7 @@
 
 import { useUser, useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, Moon, Sun, History, LayoutDashboard, BookOpen } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, History, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { AuthModal } from "./auth-modal";
@@ -57,7 +57,6 @@ export function Header() {
   return (
     <header className="relative z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20 h-16">
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        {/* Lado Esquerdo: Link Home e Histórico */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity">
             <BookOpen className="h-6 w-6 text-accent" />
@@ -114,7 +113,6 @@ export function Header() {
           </Sheet>
         </div>
 
-        {/* Lado Direito: Tema e Auth */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full hover:bg-accent/10">
             {theme === "light" ? <Moon className="h-5 w-5 text-accent" /> : <Sun className="h-5 w-5 text-accent" />}
