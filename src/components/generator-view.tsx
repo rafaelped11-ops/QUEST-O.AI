@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { generateQuestionsFromPdf } from "@/ai/flows/generate-questions-from-pdf";
 import { parseManualQuestions } from "@/ai/flows/parse-manual-questions";
 import { suggestEssayTopics, correctEssay } from "@/ai/flows/essay-training-flows";
@@ -12,10 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileUp, Sparkles, AlertCircle, Pencil, FileText, History, Trash2, BrainCircuit } from "lucide-react";
+import { Loader2, Sparkles, Pencil, History, BrainCircuit } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore } from "@/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -62,8 +61,6 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
-      // In a real scenario, you'd extract text from the PDF file here.
-      // For now, we use a placeholder text.
       const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
@@ -169,22 +166,22 @@ export function GeneratorView() {
   return (
     <div className="space-y-8 pb-12">
       <Tabs defaultValue="pdf" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1">
-          <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white">
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
+          <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
             <BrainCircuit className="h-4 w-4" /> Questões por IA
           </TabsTrigger>
-          <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white">
+          <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
             <Pencil className="h-4 w-4" /> Entrada Manual
           </TabsTrigger>
-          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-accent data-[state=active]:text-accent-foreground rounded-lg">
             <Sparkles className="h-4 w-4" /> Prova Discursiva
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pdf">
-          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardDescription>Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
+              <CardDescription className="text-foreground/70 font-medium">Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
@@ -192,14 +189,14 @@ export function GeneratorView() {
                   <div className="space-y-2">
                     <Label htmlFor="pdf">Arquivo PDF</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="pdf" type="file" accept=".pdf" onChange={handleFileChange} className="bg-background" />
-                      {file && <span className="text-xs text-green-500 font-medium whitespace-nowrap">✓ Pronto</span>}
+                      <Input id="pdf" type="file" accept=".pdf" onChange={handleFileChange} className="bg-background border-primary/20" />
+                      {file && <span className="text-xs text-accent font-black whitespace-nowrap">✓ Pronto</span>}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Tipo de Questão</Label>
                     <Select value={questionType} onValueChange={(v: any) => setQuestionType(v)}>
-                      <SelectTrigger id="type" className="bg-background"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="type" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="A">Tipo A (Certo/Errado - Cebraspe)</SelectItem>
                         <SelectItem value="C">Tipo C (Múltipla Escolha - A a E)</SelectItem>
@@ -208,12 +205,12 @@ export function GeneratorView() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="count">Quantidade (Máx 60)</Label>
-                    <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background" />
+                    <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background border-primary/20" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="difficulty">Dificuldade</Label>
                     <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)}>
-                      <SelectTrigger id="difficulty" className="bg-background"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="difficulty" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="easy">Iniciante</SelectItem>
                         <SelectItem value="medium">Intermediário</SelectItem>
@@ -222,7 +219,7 @@ export function GeneratorView() {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-[1.01]" disabled={loading}>
+                <Button type="submit" className="w-full h-12 text-lg font-black shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-[1.01]" disabled={loading}>
                   {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "gerar questões"}
                 </Button>
               </form>
@@ -231,19 +228,19 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="manual">
-          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardTitle className="text-xl">Identificação de Questões</CardTitle>
-              <CardDescription>Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
+              <CardTitle className="text-xl font-black">Identificação de Questões</CardTitle>
+              <CardDescription className="text-foreground/70 font-medium">Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
                 placeholder="Cole aqui o enunciado, opções e gabarito se tiver..." 
-                className="min-h-[200px] bg-background" 
+                className="min-h-[200px] bg-background border-primary/20" 
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
               />
-              <Button onClick={handleManualParse} className="w-full h-12 font-bold bg-primary hover:bg-primary/90" disabled={loading || !manualText}>
+              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-primary hover:bg-primary/90" disabled={loading || !manualText}>
                 {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
               </Button>
             </CardContent>
@@ -251,10 +248,10 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="discursiva">
-          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-accent/20">
             <CardHeader>
-              <CardTitle className="text-xl">Treino de Redação</CardTitle>
-              <CardDescription>Treine para provas discursivas. A IA avalia estrutura, conteúdo técnico e norma culta.</CardDescription>
+              <CardTitle className="text-xl font-black text-accent">Treino de Redação</CardTitle>
+              <CardDescription className="text-foreground/70 font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -263,18 +260,18 @@ export function GeneratorView() {
                   placeholder="Cole aqui o texto base para que a IA sugira temas relacionados..." 
                   value={essayContent}
                   onChange={(e) => setEssayContent(e.target.value)}
-                  className="bg-background"
+                  className="bg-background border-accent/20"
                 />
-                <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading || !essayContent} className="w-full sm:w-auto">
+                <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading || !essayContent} className="w-full sm:w-auto bg-accent/20 hover:bg-accent/40 text-accent-foreground font-bold">
                   Sugerir 3 Temas Possíveis
                 </Button>
               </div>
 
               {essayTopics && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-primary font-bold">Temas Sugeridos</Label>
+                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-primary/50"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-accent/50 font-medium"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -287,43 +284,43 @@ export function GeneratorView() {
                   <Label>Sua Redação</Label>
                   <Textarea 
                     placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
-                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed" 
+                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20" 
                     value={userEssay}
                     onChange={(e) => setUserEssay(e.target.value)}
                   />
                 </div>
                 <div className="space-y-4">
-                  <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/20 space-y-4">
+                  <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-bold">Pontuação Máxima da Prova</Label>
-                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background" />
+                      <Label className="font-black text-accent-foreground">Pontuação Máxima da Prova</Label>
+                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20" />
                     </div>
-                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-bold bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
-                      Submeter para Correção
+                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/80 text-accent-foreground shadow-lg" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
+                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submeter para Correção"}
                     </Button>
                   </div>
 
                   {essayCorrection && (
-                    <div className="p-6 bg-muted/50 rounded-xl border space-y-4 animate-in fade-in zoom-in-95">
-                      <div className="flex justify-between items-center border-b pb-4">
-                        <h4 className="font-black text-3xl text-primary">{essayCorrection.finalScore} <span className="text-sm font-normal text-muted-foreground">/ {maxScore}</span></h4>
-                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">Correção Concluída</Badge>
+                    <div className="p-6 bg-muted/50 rounded-xl border-2 border-accent/20 space-y-4 animate-in fade-in zoom-in-95">
+                      <div className="flex justify-between items-center border-b border-accent/10 pb-4">
+                        <h4 className="font-black text-3xl text-accent">{essayCorrection.finalScore} <span className="text-sm font-normal text-muted-foreground">/ {maxScore}</span></h4>
+                        <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Correção Concluída</Badge>
                       </div>
                       <div className="space-y-4 text-sm">
                         <div>
-                          <p className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1">Feedback Geral</p>
-                          <p className="leading-relaxed">{essayCorrection.feedback}</p>
+                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback Especialista</p>
+                          <p className="leading-relaxed font-medium">{essayCorrection.feedback}</p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/10">
-                            <p className="font-bold text-green-600 mb-1">Pontos Fortes</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs">
+                          <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/20">
+                            <p className="font-black text-green-600 text-[10px] uppercase tracking-widest mb-1">Destaques</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs font-medium">
                               {essayCorrection.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
                             </ul>
                           </div>
-                          <div className="bg-red-500/5 p-3 rounded-lg border border-red-500/10">
-                            <p className="font-bold text-red-600 mb-1">Oportunidades</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs">
+                          <div className="bg-accent/5 p-3 rounded-lg border border-accent/20">
+                            <p className="font-black text-accent-foreground text-[10px] uppercase tracking-widest mb-1">Evolução</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs font-medium">
                               {essayCorrection.weaknesses.map((w: string, i: number) => <li key={i}>{w}</li>)}
                             </ul>
                           </div>
@@ -340,21 +337,21 @@ export function GeneratorView() {
 
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-xl border border-primary/20 backdrop-blur-md">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
             <div>
-              <h2 className="text-2xl font-bold">Resultado do Simulado</h2>
-              <p className="text-muted-foreground">{results.length} questões processadas</p>
+              <h2 className="text-2xl font-black text-primary">Resultado do Simulado</h2>
+              <p className="text-muted-foreground font-medium">{results.length} questões processadas</p>
             </div>
             <div className="flex items-center gap-4">
                {questionType === 'A' && (
-                <div className="text-center px-4 py-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                  <p className="text-[10px] uppercase font-black text-orange-600">Padrão Cebraspe</p>
-                  <p className="text-xs text-orange-600/80">1 Erro = -1 Acerto</p>
+                <div className="text-center px-4 py-2 bg-accent/20 rounded-lg border border-accent/30">
+                  <p className="text-[10px] uppercase font-black text-accent-foreground">Padrão Cebraspe</p>
+                  <p className="text-xs text-accent-foreground/80 font-bold">1 Erro = -1 Acerto</p>
                 </div>
                )}
-              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-inner border min-w-[160px]">
-                <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1">Aproveitamento Final</p>
-                <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-orange-500'}`}>
+              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-accent/20 min-w-[180px]">
+                <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento Final</p>
+                <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
                   {calculateAproveitamento()}%
                 </p>
               </div>

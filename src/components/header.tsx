@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useAuth } from "@/firebase";
@@ -55,11 +54,11 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold text-foreground">Questões <span className="text-primary">AÍ</span></span>
+          <BookOpen className="h-6 w-6 text-accent" />
+          <span className="text-xl font-black text-foreground">Questões <span className="text-accent">AÍ</span></span>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
@@ -69,7 +68,7 @@ export function Header() {
             }
           }}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 text-accent-foreground font-semibold bg-accent/20 hover:bg-accent/30">
+              <Button variant="ghost" size="sm" className="gap-2 text-accent-foreground font-bold bg-accent/40 hover:bg-accent/60 transition-colors">
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">Meus Questionários</span>
               </Button>
@@ -77,7 +76,7 @@ export function Header() {
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <LayoutDashboard className="h-5 w-5 text-primary" />
+                  <LayoutDashboard className="h-5 w-5 text-accent" />
                   Meus Questionários
                 </SheetTitle>
                 <SheetDescription>
@@ -94,16 +93,16 @@ export function Header() {
                   <>
                     <div className="divide-y max-h-[60vh] overflow-y-auto pr-2">
                       {history.map((item) => (
-                        <div key={item.id} className="py-4 space-y-1">
-                          <p className="font-semibold text-sm truncate">{item.fileName}</p>
+                        <div key={item.id} className="py-4 space-y-1 hover:bg-muted/50 transition-colors px-2 rounded-lg">
+                          <p className="font-bold text-sm truncate">{item.fileName}</p>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{item.type} • {item.count} itens</span>
-                            <span>{new Date(item.date).toLocaleDateString()}</span>
+                            <span className="bg-accent/20 px-2 py-0.5 rounded text-accent-foreground font-medium">{item.type}</span>
+                            <span>{item.count} itens • {new Date(item.date).toLocaleDateString()}</span>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <Button variant="outline" className="w-full text-destructive" onClick={clearHistory}>
+                    <Button variant="outline" className="w-full text-destructive border-destructive/20" onClick={clearHistory}>
                       Limpar Histórico
                     </Button>
                   </>
@@ -112,20 +111,20 @@ export function Header() {
             </SheetContent>
           </Sheet>
 
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full hover:bg-accent/20">
+            {theme === "light" ? <Moon className="h-5 w-5 text-accent" /> : <Sun className="h-5 w-5 text-accent" />}
           </Button>
 
           {user ? (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-accent/20">
                 <LogOut className="h-4 w-4" />
                 Sair
               </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button onClick={() => setIsAuthModalOpen(true)} size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold">
+              <Button onClick={() => setIsAuthModalOpen(true)} size="sm" className="bg-accent hover:bg-accent/80 text-accent-foreground font-black">
                 <UserIcon className="mr-2 h-4 w-4" />
                 Entrar
               </Button>
