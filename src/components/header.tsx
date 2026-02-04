@@ -61,10 +61,16 @@ export function Header() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => setIsAuthModalOpen(true)} size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold">
-              <UserIcon className="mr-2 h-4 w-4" />
-              Entrar / Criar Conta
-            </Button>
+            <div className="flex items-center gap-2">
+               <Button variant="ghost" size="sm" className="hidden md:flex gap-2" onClick={() => toast({ title: "Local", description: "Histórico local disponível no menu do navegador." })}>
+                <History className="h-4 w-4" />
+                Local
+              </Button>
+              <Button onClick={() => setIsAuthModalOpen(true)} size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold">
+                <UserIcon className="mr-2 h-4 w-4" />
+                Entrar
+              </Button>
+            </div>
           )}
         </div>
       </div>

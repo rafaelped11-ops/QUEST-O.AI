@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview Gera questões de concurso a partir de um documento PDF.
+ * Foca em ineditismo e cobertura integral do texto.
  */
 
 import { ai } from '@/ai/genkit';
@@ -22,9 +23,9 @@ const GenerateQuestionsFromPdfOutputSchema = z.object({
     z.object({
       text: z.string().describe('O enunciado da questão.'),
       options: z.array(z.string()).optional().describe('Opções de A a E para múltipla escolha.'),
-      correctAnswer: z.string().describe('A resposta correta (C/E ou a letra da opção).'),
-      justification: z.string().describe('Justificativa pedagógica da questão.'),
-      sourcePage: z.number().describe('Número da página no documento original de onde a informação foi extraída.'),
+      correctAnswer: z.string().describe('A resposta correta (C/E para Tipo A ou a letra da opção para Tipo C).'),
+      justification: z.string().describe('Justificativa pedagógica detalhada da questão baseada no texto.'),
+      sourcePage: z.number().describe('Número da página aproximada no documento original de onde a informação foi extraída.'),
     })
   ),
 });
@@ -35,20 +36,16 @@ const prompt = ai.definePrompt({
   name: 'generateQuestionsFromPdfPrompt',
   input: { schema: GenerateQuestionsFromPdfInputSchema },
   output: { schema: GenerateQuestionsFromPdfOutputSchema },
-  prompt: `Você é um especialista em bancas examinadoras de concursos públicos (como Cebraspe e FGV).
-  Sua tarefa é gerar {{numberOfQuestions}} questões INÉDITAS baseadas INTEGRALMENTE no texto do documento fornecido abaixo.
+  prompt: `Você é um especialista em bancas examinadoras de concursos de alto nível (Cebraspe, FGV, FCC).
+  Sua missão é criar {{numberOfQuestions}} questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
   
-  O documento é um material de estudo. Você deve cobrir o máximo de tópicos possíveis do documento para garantir uma abordagem integral.
-  
-  TIPO DE QUESTÃO: {{#if (eq questionType 'A')}}Certo ou Errado (Estilo Cebraspe){{else}}Múltipla Escolha (A a E){{/if}}
-  DIFICULDADE: {{difficulty}}
-  
-  REGRAS:
-  1. As questões devem ser desafiadoras e testar o conhecimento real do documento.
-  2. Cada questão deve ter uma justificativa clara baseada no texto.
-  3. Você deve indicar o número da página exata (conforme o contexto do texto) de onde extraiu a informação.
-  4. Se o tipo for 'A', a resposta deve ser 'C' ou 'E'.
-  5. Se o tipo for 'C', forneça 5 opções (A, B, C, D, E) e a resposta correta como a letra correspondente.
+  DIRETRIZES:
+  1. ABORDAGEM INTEGRAL: Varra todo o documento, não se limite ao início. Crie um simulado que cubra todos os tópicos importantes.
+  2. INEDITISMO: Não use questões conhecidas. Crie novas situações-problema baseadas nas regras do PDF.
+  3. FORMATO: {{#if (eq questionType 'A')}}Estilo Cebraspe (Certo ou Errado). A resposta deve ser 'C' ou 'E'.{{else}}Múltipla Escolha (A a E). Forneça 5 opções claras.{{/if}}
+  4. DIFICULDADE: {{difficulty}}.
+  5. JUSTIFICATIVA: Explique detalhadamente por que o item está correto ou incorreto, citando o conceito do texto.
+  6. PÁGINA: Identifique a página do texto de onde a questão foi extraída.
   
   DOCUMENTO:
   {{{pdfText}}}`,

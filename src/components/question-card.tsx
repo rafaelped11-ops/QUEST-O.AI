@@ -18,7 +18,7 @@ interface QuestionCardProps {
   justification: string;
   sourcePage: number;
   type: 'A' | 'C';
-  onAnswered?: (isCorrect: boolean) => void;
+  onAnswered?: (isCorrect: boolean | null) => void;
 }
 
 export function QuestionCard({ 
@@ -68,7 +68,7 @@ export function QuestionCard({
             <div className="flex gap-4">
               <Button 
                 variant={selectedAnswer === 'C' ? 'default' : 'outline'} 
-                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'C' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'C' ? 'bg-green-500 hover:bg-green-600 text-white' : ''} ${isSubmitted && selectedAnswer === 'C' && correctAnswer !== 'C' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
                 onClick={() => !isSubmitted && setSelectedAnswer('C')}
                 disabled={isSubmitted}
               >
@@ -76,7 +76,7 @@ export function QuestionCard({
               </Button>
               <Button 
                 variant={selectedAnswer === 'E' ? 'default' : 'outline'} 
-                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'E' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'E' ? 'bg-green-500 hover:bg-green-600 text-white' : ''} ${isSubmitted && selectedAnswer === 'E' && correctAnswer !== 'E' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
                 onClick={() => !isSubmitted && setSelectedAnswer('E')}
                 disabled={isSubmitted}
               >
@@ -110,7 +110,7 @@ export function QuestionCard({
 
       <CardFooter className="flex flex-col gap-4 bg-muted/10 border-t p-6">
         {!isSubmitted ? (
-          <Button onClick={handleCheck} className="w-full md:w-auto bg-primary hover:bg-primary/90">
+          <Button onClick={handleCheck} className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-bold">
             Verificar Resposta
           </Button>
         ) : (

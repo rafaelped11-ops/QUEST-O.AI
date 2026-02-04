@@ -24,7 +24,7 @@ export function GeneratorView() {
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
-  const [stats, setStats] = useState<{ correct: number; incorrect: number; canceled?: number } | null>(null);
+  const [stats, setStats] = useState<{ correct: number; incorrect: number } | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,25 +47,22 @@ export function GeneratorView() {
 
     setLoading(true);
     try {
-      // Em um cenário real, o texto do PDF seria extraído aqui.
-      // Como não temos a lib cliente pronta para ler PDF direto no browser sem infra pesada,
-      // Simularemos o envio do texto para a IA.
-      // Na prática, você usaria pdfjs-dist ou similar aqui.
-      const mockPdfText = "CONTEÚDO DO DOCUMENTO EXTRAÍDO PARA PROCESSAMENTO DA IA..."; 
+      // Mock de extração de texto para o MVP. Em produção, usaríamos uma Server Action com pdf-parse.
+      const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa exercida pelos órgãos e entidades do Estado."; 
       
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
         questionType,
-        numberOfQuestions: count,
+        numberOfQuestions: Math.min(60, count),
         difficulty,
       });
 
       setResults(response.questions);
-      setStats(null); // Reseta estatísticas do novo simulado
+      setStats({ correct: 0, incorrect: 0 }); // Inicia estatísticas do simulado atual
 
       // Salva no Firestore se estiver logado
       if (user) {
-        await addDoc(collection(db, "users", user.uid, "questionnaires"), {
+        addDoc(collection(db, "users", user.uid, "questionnaires"), {
           type: questionType,
           difficulty,
           count,
@@ -74,7 +71,7 @@ export function GeneratorView() {
           questions: response.questions
         });
       } else {
-        // Salva localmente
+        // Salva no histórico local
         const history = JSON.parse(localStorage.getItem("study_history") || "[]");
         history.push({
           id: Date.now(),
@@ -89,32 +86,34 @@ export function GeneratorView() {
       toast({ title: "Sucesso!", description: `${response.questions.length} questões inéditas geradas.` });
     } catch (error) {
       console.error(error);
-      toast({ title: "Erro ao gerar", description: "Falha na comunicação com a IA.", variant: "destructive" });
+      toast({ title: "Erro ao gerar", description: "Falha na comunicação com a IA DeepSeek.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   const updateStats = (isCorrect: boolean | null) => {
-    if (questionType === 'A') {
-      setStats(prev => {
-        const current = prev || { correct: 0, incorrect: 0, canceled: 0 };
-        if (isCorrect === true) return { ...current, correct: current.correct + 1 };
-        if (isCorrect === false) return { ...current, incorrect: current.incorrect + 1 };
-        return current;
-      });
-    }
+    if (isCorrect === null) return;
+    setStats(prev => {
+      if (!prev) return { correct: isCorrect ? 1 : 0, incorrect: isCorrect ? 0 : 1 };
+      return {
+        correct: isCorrect ? prev.correct + 1 : prev.correct,
+        incorrect: !isCorrect ? prev.incorrect + 1 : prev.incorrect,
+      };
+    });
   };
 
   const calculateAproveitamento = () => {
-    if (!stats) return 0;
+    if (!stats || !results) return "0.0";
+    const total = results.length;
     if (questionType === 'A') {
-      // Lógica Cebraspe: Uma errada anula uma certa
+      // Fator Cebraspe: Errada anula Certa
       const saldo = stats.correct - stats.incorrect;
-      const aproveitamento = (Math.max(0, saldo) / (results?.length || 1)) * 100;
-      return aproveitamento.toFixed(1);
+      const calc = (Math.max(0, saldo) / total) * 100;
+      return calc.toFixed(1);
     }
-    return ((stats.correct / (results?.length || 1)) * 100).toFixed(1);
+    // Múltipla Escolha Simples
+    return ((stats.correct / total) * 100).toFixed(1);
   };
 
   return (
@@ -123,17 +122,17 @@ export function GeneratorView() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className="h-6 w-6 text-accent" />
-            Configurar Simulador
+            Novo Simulado Inteligente
           </CardTitle>
           <CardDescription>
-            Carregue seu material de estudo para gerar questões inéditas e diversificadas.
+            Configure seu simulador para gerar questões inéditas focadas no seu PDF.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleGenerate} className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="pdf">Material de Estudo (PDF)</Label>
+                <Label htmlFor="pdf">Arquivo PDF (Base de Estudo)</Label>
                 <div className="relative group">
                   <Input 
                     id="pdf" 
@@ -160,7 +159,7 @@ export function GeneratorView() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="count">Quantidade (Máx: 60)</Label>
+                <Label htmlFor="count">Quantidade (Máximo 60)</Label>
                 <Input 
                   id="count" 
                   type="number" 
@@ -168,19 +167,20 @@ export function GeneratorView() {
                   max={60} 
                   value={count} 
                   onChange={(e) => setCount(Number(e.target.value))}
+                  placeholder="Ex: 10"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="difficulty">Dificuldade</Label>
+                <Label htmlFor="difficulty">Nível de Dificuldade</Label>
                 <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)}>
                   <SelectTrigger id="difficulty">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="easy">Fácil</SelectItem>
-                    <SelectItem value="medium">Médio</SelectItem>
-                    <SelectItem value="hard">Difícil</SelectItem>
+                    <SelectItem value="easy">Iniciante</SelectItem>
+                    <SelectItem value="medium">Intermediário</SelectItem>
+                    <SelectItem value="hard">Avançado (Elite)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -188,18 +188,18 @@ export function GeneratorView() {
 
             <Button 
               type="submit" 
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold h-12 text-lg shadow-lg shadow-accent/20"
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold h-12 text-lg shadow-lg"
               disabled={loading}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Lendo Documento e Criando Questões...
+                  IA Analisando Documento...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Gerar Simulado Inédito
+                  Gerar Simulados Inéditos
                 </>
               )}
             </Button>
@@ -211,20 +211,19 @@ export function GeneratorView() {
         <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-xl border border-primary/20">
             <div>
-              <h2 className="text-2xl font-bold">Simulado Gerado</h2>
-              <p className="text-muted-foreground">Documento: {file?.name}</p>
+              <h2 className="text-2xl font-bold">Simulado: {file?.name}</h2>
+              <p className="text-muted-foreground">{results.length} questões geradas com DeepSeek</p>
             </div>
-            {stats && (
-              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-inner border">
-                <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1">Seu Aproveitamento</p>
-                <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 60 ? 'text-green-500' : 'text-orange-500'}`}>
-                  {calculateAproveitamento()}%
-                </p>
-                {questionType === 'A' && (
-                  <p className="text-[10px] text-muted-foreground mt-1">* Critério Cebraspe: Errada anula Certa</p>
-                )}
-              </div>
-            )}
+            
+            <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-inner border min-w-[160px]">
+              <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1">Aproveitamento</p>
+              <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-orange-500'}`}>
+                {calculateAproveitamento()}%
+              </p>
+              {questionType === 'A' && (
+                <p className="text-[10px] text-muted-foreground mt-1 leading-tight">Uma errada anula uma certa (Cebraspe)</p>
+              )}
+            </div>
           </div>
 
           {questionType === 'A' && (
@@ -232,7 +231,7 @@ export function GeneratorView() {
               <AlertCircle className="h-4 w-4 text-orange-600" />
               <AlertTitle>Fator de Correção Ativo</AlertTitle>
               <AlertDescription>
-                Neste modo, cada resposta incorreta anulará uma resposta correta, seguindo o padrão da banca Cebraspe.
+                Cuidado! Cada resposta incorreta subtrairá um ponto do seu total, simulando o critério rigoroso da banca Cebraspe.
               </AlertDescription>
             </Alert>
           )}
