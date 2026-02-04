@@ -59,6 +59,7 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
+      // Simulação de extração de texto para o protótipo
       const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
