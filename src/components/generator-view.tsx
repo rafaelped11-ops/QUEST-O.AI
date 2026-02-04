@@ -149,17 +149,21 @@ export function GeneratorView() {
 
   const saveToHistory = (name: string, type: string, count: number) => {
     const newItem = {
-      id: Date.now(),
       fileName: name,
       type,
       date: new Date().toISOString(),
       count
     };
     if (user && db) {
-      addDoc(collection(db, "users", user.uid, "questionnaires"), { ...newItem, createdAt: serverTimestamp() });
+      // FIX: Include userId and document ID to satisfy security rules
+      addDoc(collection(db, "users", user.uid, "questionnaires"), { 
+        ...newItem, 
+        userId: user.uid, 
+        createdAt: serverTimestamp() 
+      });
     }
     const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
-    const history = [newItem, ...existingHistory].slice(0, 20);
+    const history = [{ ...newItem, id: Date.now() }, ...existingHistory].slice(0, 20);
     localStorage.setItem("study_history", JSON.stringify(history));
   };
 
@@ -278,7 +282,7 @@ export function GeneratorView() {
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Base de Conhecimento (Texto)</Label>
+                  <Label className="text-foreground font-bold dark:text-white">Base de Conhecimento (Texto)</Label>
                   <Textarea 
                     placeholder="Cole aqui o texto base..." 
                     value={essayContent}
@@ -287,7 +291,7 @@ export function GeneratorView() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold dark:text-white">Ou Carregar PDF</Label>
+                  <Label className="text-foreground font-bold dark:text-white">Selecionar Documento</Label>
                   <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
@@ -325,7 +329,7 @@ export function GeneratorView() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Sua Redação</Label>
+                  <Label className="text-foreground font-bold dark:text-white">Sua Redação</Label>
                   <Textarea 
                     placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
                     className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20 text-foreground" 
