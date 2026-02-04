@@ -2,7 +2,7 @@
 
 import { useUser, useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, Moon, Sun, History, LayoutDashboard } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, History, LayoutDashboard, Brain } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { AuthModal } from "./auth-modal";
@@ -55,8 +55,13 @@ export function Header() {
   return (
     <header className="relative z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20 h-16">
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        {/* Lado Esquerdo: Histórico */}
-        <div className="flex items-center">
+        {/* Lado Esquerdo: Branding e Histórico */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter mr-4">
+            <Brain className="h-6 w-6 text-accent" />
+            <span className="hidden sm:inline">Questões AÍ</span>
+          </div>
+
           <Sheet onOpenChange={(open) => {
             if (open) {
               setHistory(JSON.parse(localStorage.getItem("study_history") || "[]"));
@@ -65,7 +70,7 @@ export function Header() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2 text-accent-foreground font-bold bg-accent/10 hover:bg-accent/20 transition-colors">
                 <History className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs uppercase tracking-wider">Meus Questionários</span>
+                <span className="hidden lg:inline text-xs uppercase tracking-wider">Meus Questionários</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
@@ -105,23 +110,6 @@ export function Header() {
               </div>
             </SheetContent>
           </Sheet>
-        </div>
-
-        {/* Logo Centralizado (Flutuando na borda) */}
-        <div className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2 z-[60]">
-          <div className="bg-background p-1 rounded-full shadow-2xl border-4 border-accent/40 hover:scale-105 transition-all duration-300">
-            <div className="relative w-20 h-20 md:w-24 md:h-24 flex items-center justify-center overflow-hidden rounded-full bg-white dark:bg-zinc-900">
-              <img 
-                src="/icon.png" 
-                alt="Logo" 
-                className="w-full h-full object-contain p-2"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "https://picsum.photos/seed/questoesai/200/200";
-                }}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Lado Direito: Tema e Auth */}
