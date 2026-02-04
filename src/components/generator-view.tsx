@@ -288,7 +288,7 @@ export function GeneratorView() {
               </div>
 
               <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
-                Sugerir 3 Temas com Base no Material
+                Sugerir Temas
               </Button>
 
               {essayTopics && (
@@ -316,10 +316,10 @@ export function GeneratorView() {
                 <div className="space-y-4">
                   <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-black text-accent-foreground">Pontuação Máxima da Prova</Label>
+                      <Label className="font-black text-foreground">Pontuação Máxima da Prova</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
-                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
+                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
                       {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submeter para Correção"}
                     </Button>
                   </div>
