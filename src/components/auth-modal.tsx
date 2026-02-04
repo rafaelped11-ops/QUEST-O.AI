@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
@@ -21,6 +22,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
+  const db = useFirestore();
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -31,7 +33,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Inicializa o perfil do usuário no Firestore para evitar erros de permissão em subcoleções
+        await setDoc(doc(db, "users", user.uid), {
+          id: user.uid,
+          email: user.email,
+          themePreference: "light",
+          createdAt: serverTimestamp()
+        });
+
         toast({ title: "Conta criada!", description: "Sua jornada rumo à aprovação começou." });
       }
       onClose();
@@ -64,7 +76,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <Label htmlFor="password">Senha</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-black" disabled={loading}>
             {loading ? "Processando..." : isLogin ? "Entrar" : "Cadastrar"}
           </Button>
           <Button type="button" variant="ghost" className="w-full text-xs" onClick={() => setIsLogin(!isLogin)}>

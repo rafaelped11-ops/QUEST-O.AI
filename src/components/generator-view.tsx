@@ -17,7 +17,8 @@ import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, serverTimestamp } from "firebase/firestore";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { extractTextFromPdf } from "@/lib/pdf-actions";
 
 export function GeneratorView() {
@@ -155,7 +156,8 @@ export function GeneratorView() {
       count
     };
     if (user && db) {
-      addDoc(collection(db, "users", user.uid, "questionnaires"), { 
+      const colRef = collection(db, "users", user.uid, "questionnaires");
+      addDocumentNonBlocking(colRef, { 
         ...newItem, 
         userId: user.uid, 
         createdAt: serverTimestamp() 
@@ -245,7 +247,7 @@ export function GeneratorView() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-14 text-lg font-black shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground transition-all hover:scale-[1.01]" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "gerar questões"}
+                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Gerar Questões"}
                 </Button>
               </form>
             </CardContent>
@@ -339,7 +341,7 @@ export function GeneratorView() {
                 <div className="space-y-4">
                   <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-black text-foreground dark:text-white">Pontuação Máxima da Prova</Label>
+                      <Label className="font-bold text-foreground dark:text-white">Pontuação Máxima da Prova</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
                     <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
