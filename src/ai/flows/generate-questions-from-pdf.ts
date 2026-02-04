@@ -33,6 +33,7 @@ export type GenerateQuestionsFromPdfOutput = z.infer<typeof GenerateQuestionsFro
 
 const generateQuestionsPrompt = ai.definePrompt({
   name: 'generateQuestionsFromPdfPrompt',
+  model: 'openai/deepseek-chat',
   input: { 
     schema: GenerateQuestionsFromPdfInputSchema.extend({ isTypeA: z.boolean() }) 
   },

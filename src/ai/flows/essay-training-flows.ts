@@ -20,6 +20,7 @@ const SuggestTopicsOutputSchema = z.object({
 
 const suggestTopicsPrompt = ai.definePrompt({
   name: 'suggestEssayTopicsPrompt',
+  model: 'openai/deepseek-chat',
   input: { schema: SuggestTopicsInputSchema },
   output: { schema: SuggestTopicsOutputSchema },
   prompt: `Baseado no seguinte conteúdo de estudo, sugira EXATAMENTE 3 temas prováveis para uma prova discursiva de alto nível (estilo Cebraspe).
@@ -52,6 +53,7 @@ const CorrectEssayOutputSchema = z.object({
 
 const correctEssayPrompt = ai.definePrompt({
   name: 'correctEssayPrompt',
+  model: 'openai/deepseek-chat',
   input: { schema: CorrectEssayInputSchema },
   output: { schema: CorrectEssayOutputSchema },
   prompt: `Você é um corretor especializado em bancas de concurso, especificamente Cebraspe.

@@ -30,6 +30,7 @@ export type ParseManualQuestionsOutput = z.infer<typeof ParseManualQuestionsOutp
 
 const parsePrompt = ai.definePrompt({
   name: 'parseManualQuestionsPrompt',
+  model: 'openai/deepseek-chat',
   input: { schema: ParseManualQuestionsInputSchema },
   output: { schema: ParseManualQuestionsOutputSchema },
   prompt: `Você é um assistente especializado em processamento de textos educacionais.

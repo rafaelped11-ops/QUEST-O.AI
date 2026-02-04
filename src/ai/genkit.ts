@@ -10,8 +10,7 @@ const deepseekKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
 
 export const ai = genkit({
   plugins: [
-    // Envolvemos o plugin em uma função para garantir compatibilidade com o construtor do Genkit 1.x
-    // caso o plugin retorne um objeto de configuração estático (estilo pre-1.0).
+    // Registramos o plugin como uma função para compatibilidade com Genkit 1.x
     () => openAI({
       apiKey: deepseekKey,
       baseURL: 'https://api.deepseek.com',
