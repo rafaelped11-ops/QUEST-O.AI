@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto p-4 md:p-8 max-w-6xl mt-4">
+      <main className="container mx-auto p-4 md:p-8 max-w-6xl mt-12 md:mt-16">
         <header className="mb-12 text-center space-y-4">
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
             Transforme seus PDFs em questões de alto nível. Estude com simulados inéditos focados integralmente no seu material.

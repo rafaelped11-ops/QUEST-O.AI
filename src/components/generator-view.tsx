@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Pencil, History, BrainCircuit } from "lucide-react";
+import { Loader2, Sparkles, Pencil, BrainCircuit, FileUp } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ export function GeneratorView() {
   const { user } = useUser();
   const db = useFirestore();
   const [file, setFile] = useState<File | null>(null);
+  const [essayFile, setEssayFile] = useState<File | null>(null);
   const [questionType, setQuestionType] = useState<'A' | 'C'>('A');
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
@@ -29,10 +31,7 @@ export function GeneratorView() {
   const [results, setResults] = useState<any[] | null>(null);
   const [stats, setStats] = useState<{ correct: number; incorrect: number } | null>(null);
   
-  // Estados para Entrada Manual
   const [manualText, setManualText] = useState("");
-
-  // Estados para Prova Discursiva
   const [essayContent, setEssayContent] = useState("");
   const [essayTopics, setEssayTopics] = useState<string[] | null>(null);
   const [selectedTopic, setSelectedTopic] = useState("");
@@ -42,14 +41,14 @@ export function GeneratorView() {
 
   const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setTarget: (f: File) => void) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       if (selectedFile.type !== "application/pdf") {
         toast({ title: "Arquivo inválido", description: "Por favor, envie um arquivo PDF.", variant: "destructive" });
         return;
       }
-      setFile(selectedFile);
+      setTarget(selectedFile);
     }
   };
 
@@ -94,10 +93,14 @@ export function GeneratorView() {
   };
 
   const handleSuggestTopics = async () => {
-    if (!essayContent) return;
+    if (!essayContent && !essayFile) {
+      toast({ title: "Aviso", description: "Forneça um texto base ou carregue um PDF." });
+      return;
+    }
     setLoading(true);
     try {
-      const response = await suggestEssayTopics({ content: essayContent });
+      const baseContent = essayFile ? `Conteúdo extraído do arquivo ${essayFile.name}` : essayContent;
+      const response = await suggestEssayTopics({ content: baseContent });
       setEssayTopics(response.topics);
       toast({ title: "Temas Gerados", description: "Escolha um tema para começar seu treino." });
     } catch (error) {
@@ -164,7 +167,7 @@ export function GeneratorView() {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 mt-10">
       <Tabs defaultValue="pdf" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
           <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
@@ -189,7 +192,7 @@ export function GeneratorView() {
                   <div className="space-y-2">
                     <Label htmlFor="pdf">Arquivo PDF</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="pdf" type="file" accept=".pdf" onChange={handleFileChange} className="bg-background border-primary/20" />
+                      <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20" />
                       {file && <span className="text-xs text-accent font-black whitespace-nowrap">✓ Pronto</span>}
                     </div>
                   </div>
@@ -219,7 +222,7 @@ export function GeneratorView() {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-12 text-lg font-black shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-[1.01]" disabled={loading}>
+                <Button type="submit" className="w-full h-14 text-lg font-black shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground transition-all hover:scale-[1.01]" disabled={loading}>
                   {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "gerar questões"}
                 </Button>
               </form>
@@ -240,7 +243,7 @@ export function GeneratorView() {
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
               />
-              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-primary hover:bg-primary/90" disabled={loading || !manualText}>
+              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading || !manualText}>
                 {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
               </Button>
             </CardContent>
@@ -254,24 +257,45 @@ export function GeneratorView() {
               <CardDescription className="text-foreground/70 font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Base de Conhecimento (Opcional)</Label>
-                <Textarea 
-                  placeholder="Cole aqui o texto base para que a IA sugira temas relacionados..." 
-                  value={essayContent}
-                  onChange={(e) => setEssayContent(e.target.value)}
-                  className="bg-background border-accent/20"
-                />
-                <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading || !essayContent} className="w-full sm:w-auto bg-accent/20 hover:bg-accent/40 text-accent-foreground font-bold">
-                  Sugerir 3 Temas Possíveis
-                </Button>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Base de Conhecimento (Texto)</Label>
+                  <Textarea 
+                    placeholder="Cole aqui o texto base..." 
+                    value={essayContent}
+                    onChange={(e) => setEssayContent(e.target.value)}
+                    className="bg-background border-accent/20 h-24"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ou Carregar PDF</Label>
+                  <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/20 rounded-lg bg-accent/5 items-center">
+                    <Input 
+                      type="file" 
+                      accept=".pdf" 
+                      className="hidden" 
+                      id="essay-pdf" 
+                      onChange={(e) => handleFileChange(e, setEssayFile)}
+                    />
+                    <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1">
+                      <FileUp className="h-6 w-6 text-accent" />
+                      <span className="text-xs font-bold text-accent-foreground">
+                        {essayFile ? essayFile.name : "Selecionar Documento"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
               </div>
+
+              <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading} className="w-full bg-accent/20 hover:bg-accent/40 text-accent-foreground font-black">
+                Sugerir 3 Temas com Base no Material
+              </Button>
 
               {essayTopics && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos</Label>
+                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela IA</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-accent/50 font-medium"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
