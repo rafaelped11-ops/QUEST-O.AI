@@ -159,7 +159,7 @@ export function GeneratorView() {
       userId: user?.uid || "anonymous"
     };
 
-    // Salva localmente primeiro (evita erro 403 imediato se não logado)
+    // Salva localmente primeiro (evita erro 403 imediato se não logado ou erro de API)
     const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
     const history = [newItem, ...existingHistory].slice(0, 20);
     localStorage.setItem("study_history", JSON.stringify(history));
