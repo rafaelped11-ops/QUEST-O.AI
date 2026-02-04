@@ -6,24 +6,21 @@ import { GeneratorView } from "@/components/generator-view";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#F0F4F7]">
+    <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto p-4 md:p-8 max-w-5xl">
+      <main className="container mx-auto p-4 md:p-8 max-w-6xl mt-4">
         <header className="mb-12 text-center space-y-4">
-          <h1 className="text-5xl font-bold text-foreground">
-            Questões <span className="text-primary">AÍ</span>
-          </h1>
-          <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
-            Transforme seus PDFs em questões de alto nível. Estude com questões inéditas focadas no seu material.
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
+            Transforme seus PDFs em questões de alto nível. Estude com simulados inéditos focados integralmente no seu material.
           </p>
         </header>
         
         <GeneratorView />
       </main>
       
-      <footer className="mt-20 border-t py-12 bg-white dark:bg-zinc-950">
+      <footer className="mt-20 border-t py-12 bg-card">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">© 2024 Questões AÍ - O seu simulador inteligente.</p>
+          <p className="text-muted-foreground text-sm">© 2024 Questões AÍ - O seu simulador inteligente para concursos.</p>
         </div>
       </footer>
     </div>

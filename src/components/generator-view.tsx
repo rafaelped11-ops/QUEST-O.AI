@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileUp, Sparkles, AlertCircle, Pencil, FileText, History, Trash2 } from "lucide-react";
+import { Loader2, FileUp, Sparkles, AlertCircle, Pencil, FileText, History, Trash2, BrainCircuit } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -29,7 +29,6 @@ export function GeneratorView() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
   const [stats, setStats] = useState<{ correct: number; incorrect: number } | null>(null);
-  const [localHistory, setLocalHistory] = useState<any[]>([]);
   
   // Estados para Entrada Manual
   const [manualText, setManualText] = useState("");
@@ -43,11 +42,6 @@ export function GeneratorView() {
   const [essayCorrection, setEssayCorrection] = useState<any | null>(null);
 
   const { toast } = useToast();
-
-  useEffect(() => {
-    const history = JSON.parse(localStorage.getItem("study_history") || "[]");
-    setLocalHistory(history);
-  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -68,7 +62,9 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
-      const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa."; 
+      // In a real scenario, you'd extract text from the PDF file here.
+      // For now, we use a placeholder text.
+      const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
         questionType,
@@ -77,7 +73,7 @@ export function GeneratorView() {
       });
       setResults(response.questions);
       setStats({ correct: 0, incorrect: 0 });
-      saveToHistory(file.name, questionType, response.questions.length);
+      saveToHistory(file.name, "IA (PDF)", response.questions.length);
     } catch (error) {
       toast({ title: "Erro", description: "Falha ao gerar questões.", variant: "destructive" });
     } finally {
@@ -92,7 +88,7 @@ export function GeneratorView() {
       const response = await parseManualQuestions({ rawText: manualText });
       setResults(response.questions);
       setStats({ correct: 0, incorrect: 0 });
-      saveToHistory("Entrada Manual", "Mista", response.questions.length);
+      saveToHistory("Entrada Manual", "Manual", response.questions.length);
     } catch (error) {
       toast({ title: "Erro", description: "Falha ao identificar questões.", variant: "destructive" });
     } finally {
@@ -143,15 +139,9 @@ export function GeneratorView() {
     if (user) {
       addDoc(collection(db, "users", user.uid, "questionnaires"), { ...newItem, createdAt: serverTimestamp() });
     }
-    const history = [newItem, ...localHistory].slice(0, 10);
-    setLocalHistory(history);
+    const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
+    const history = [newItem, ...existingHistory].slice(0, 20);
     localStorage.setItem("study_history", JSON.stringify(history));
-  };
-
-  const clearHistory = () => {
-    localStorage.removeItem("study_history");
-    setLocalHistory([]);
-    toast({ title: "Histórico Limpo" });
   };
 
   const updateStats = (isCorrect: boolean | null) => {
@@ -179,51 +169,60 @@ export function GeneratorView() {
   return (
     <div className="space-y-8 pb-12">
       <Tabs defaultValue="pdf" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="pdf" className="gap-2"><FileText className="h-4 w-4" /> Simulado PDF</TabsTrigger>
-          <TabsTrigger value="manual" className="gap-2"><Pencil className="h-4 w-4" /> Entrada Manual</TabsTrigger>
-          <TabsTrigger value="discursiva" className="gap-2"><Sparkles className="h-4 w-4" /> Prova Discursiva</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1">
+          <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white">
+            <BrainCircuit className="h-4 w-4" /> Questões por IA
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white">
+            <Pencil className="h-4 w-4" /> Entrada Manual
+          </TabsTrigger>
+          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+            <Sparkles className="h-4 w-4" /> Prova Discursiva
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pdf">
-          <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardDescription>Configure seu simulador para gerar questões inéditas focadas no seu PDF.</CardDescription>
+              <CardDescription>Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="pdf">Arquivo PDF</Label>
-                    <Input id="pdf" type="file" accept=".pdf" onChange={handleFileChange} />
+                    <div className="flex items-center gap-2">
+                      <Input id="pdf" type="file" accept=".pdf" onChange={handleFileChange} className="bg-background" />
+                      {file && <span className="text-xs text-green-500 font-medium whitespace-nowrap">✓ Pronto</span>}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Tipo de Questão</Label>
                     <Select value={questionType} onValueChange={(v: any) => setQuestionType(v)}>
-                      <SelectTrigger id="type"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="type" className="bg-background"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">Tipo A (Certo/Errado)</SelectItem>
-                        <SelectItem value="C">Tipo C (Múltipla Escolha)</SelectItem>
+                        <SelectItem value="A">Tipo A (Certo/Errado - Cebraspe)</SelectItem>
+                        <SelectItem value="C">Tipo C (Múltipla Escolha - A a E)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="count">Quantidade (Máx 60)</Label>
-                    <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} />
+                    <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="difficulty">Dificuldade</Label>
                     <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)}>
-                      <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="difficulty" className="bg-background"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="easy">Iniciante</SelectItem>
                         <SelectItem value="medium">Intermediário</SelectItem>
-                        <SelectItem value="hard">Avançado</SelectItem>
+                        <SelectItem value="hard">Avançado (Nível Concurso)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-12 text-lg" disabled={loading}>
+                <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 transition-all hover:scale-[1.01]" disabled={loading}>
                   {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "gerar questões"}
                 </Button>
               </form>
@@ -232,47 +231,50 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="manual">
-          <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Identificação de Questões</CardTitle>
-              <CardDescription>Cole o texto de questões abaixo para que a IA identifique e formate para treino.</CardDescription>
+              <CardTitle className="text-xl">Identificação de Questões</CardTitle>
+              <CardDescription>Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
-                placeholder="Cole aqui o texto com as questões e respostas..." 
-                className="min-h-[200px]" 
+                placeholder="Cole aqui o enunciado, opções e gabarito se tiver..." 
+                className="min-h-[200px] bg-background" 
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
               />
-              <Button onClick={handleManualParse} className="w-full" disabled={loading || !manualText}>
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar Questões"}
+              <Button onClick={handleManualParse} className="w-full h-12 font-bold bg-primary hover:bg-primary/90" disabled={loading || !manualText}>
+                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="discursiva">
-          <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Treino de Redação</CardTitle>
-              <CardDescription>Carregue conteúdo para gerar temas ou escreva diretamente sua redação para correção.</CardDescription>
+              <CardTitle className="text-xl">Treino de Redação</CardTitle>
+              <CardDescription>Treine para provas discursivas. A IA avalia estrutura, conteúdo técnico e norma culta.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Conteúdo de Referência (Opcional)</Label>
+                <Label>Base de Conhecimento (Opcional)</Label>
                 <Textarea 
-                  placeholder="Cole aqui o conteúdo sobre o qual deseja treinar a redação..." 
+                  placeholder="Cole aqui o texto base para que a IA sugira temas relacionados..." 
                   value={essayContent}
                   onChange={(e) => setEssayContent(e.target.value)}
+                  className="bg-background"
                 />
-                <Button variant="outline" onClick={handleSuggestTopics} disabled={loading || !essayContent}>Sugerir 3 Temas</Button>
+                <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading || !essayContent} className="w-full sm:w-auto">
+                  Sugerir 3 Temas Possíveis
+                </Button>
               </div>
 
               {essayTopics && (
-                <div className="space-y-2">
-                  <Label>Selecione um Tema</Label>
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <Label className="text-primary font-bold">Temas Sugeridos</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger><SelectValue placeholder="Selecione um dos temas sugeridos" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-primary/50"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -280,34 +282,52 @@ export function GeneratorView() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Seu Texto</Label>
+                  <Label>Sua Redação</Label>
                   <Textarea 
-                    placeholder="Escreva sua redação aqui..." 
-                    className="min-h-[300px]" 
+                    placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
+                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed" 
                     value={userEssay}
                     onChange={(e) => setUserEssay(e.target.value)}
                   />
                 </div>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Nota Máxima</Label>
-                    <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} />
+                  <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/20 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-bold">Pontuação Máxima da Prova</Label>
+                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background" />
+                    </div>
+                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-bold bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
+                      Submeter para Correção
+                    </Button>
                   </div>
-                  <Button onClick={handleCorrectEssay} className="w-full h-12" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
-                    Corrigir Redação
-                  </Button>
 
                   {essayCorrection && (
-                    <div className="p-4 bg-muted rounded-lg space-y-3 animate-in fade-in">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-bold text-xl text-primary">Nota Final: {essayCorrection.finalScore} / {maxScore}</h4>
+                    <div className="p-6 bg-muted/50 rounded-xl border space-y-4 animate-in fade-in zoom-in-95">
+                      <div className="flex justify-between items-center border-b pb-4">
+                        <h4 className="font-black text-3xl text-primary">{essayCorrection.finalScore} <span className="text-sm font-normal text-muted-foreground">/ {maxScore}</span></h4>
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">Correção Concluída</Badge>
                       </div>
-                      <div className="text-sm space-y-2">
-                        <p><strong>Feedback:</strong> {essayCorrection.feedback}</p>
-                        <p><strong>Pontos Fortes:</strong> {essayCorrection.strengths.join(", ")}</p>
-                        <p><strong>A melhorar:</strong> {essayCorrection.weaknesses.join(", ")}</p>
+                      <div className="space-y-4 text-sm">
+                        <div>
+                          <p className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1">Feedback Geral</p>
+                          <p className="leading-relaxed">{essayCorrection.feedback}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/10">
+                            <p className="font-bold text-green-600 mb-1">Pontos Fortes</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs">
+                              {essayCorrection.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                            </ul>
+                          </div>
+                          <div className="bg-red-500/5 p-3 rounded-lg border border-red-500/10">
+                            <p className="font-bold text-red-600 mb-1">Oportunidades</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs">
+                              {essayCorrection.weaknesses.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -320,16 +340,24 @@ export function GeneratorView() {
 
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-xl border border-primary/20">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-xl border border-primary/20 backdrop-blur-md">
             <div>
               <h2 className="text-2xl font-bold">Resultado do Simulado</h2>
               <p className="text-muted-foreground">{results.length} questões processadas</p>
             </div>
-            <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-inner border min-w-[160px]">
-              <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1">Aproveitamento</p>
-              <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-orange-500'}`}>
-                {calculateAproveitamento()}%
-              </p>
+            <div className="flex items-center gap-4">
+               {questionType === 'A' && (
+                <div className="text-center px-4 py-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                  <p className="text-[10px] uppercase font-black text-orange-600">Padrão Cebraspe</p>
+                  <p className="text-xs text-orange-600/80">1 Erro = -1 Acerto</p>
+                </div>
+               )}
+              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-lg shadow-inner border min-w-[160px]">
+                <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1">Aproveitamento Final</p>
+                <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-orange-500'}`}>
+                  {calculateAproveitamento()}%
+                </p>
+              </div>
             </div>
           </div>
           <div className="grid gap-6">
@@ -349,34 +377,6 @@ export function GeneratorView() {
           </div>
         </div>
       )}
-
-      <Card className="mt-12 border-dashed">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Histórico Local</CardTitle>
-          </div>
-          {localHistory.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearHistory} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" /> Limpar</Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {localHistory.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">Nenhum estudo realizado localmente.</p>
-          ) : (
-            <div className="divide-y">
-              {localHistory.map((item) => (
-                <div key={item.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{item.fileName}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString()} • {item.count} itens • {item.type}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
