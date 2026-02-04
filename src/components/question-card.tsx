@@ -5,115 +5,143 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, RotateCcw, CheckCircle2, ChevronDown } from "lucide-react";
-import { adjustQuestionDifficulty } from "@/ai/flows/adjust-question-difficulty";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CheckCircle2, XCircle, Info, ExternalLink, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface QuestionCardProps {
   index: number;
   question: string;
-  answer: string;
-  currentDifficulty: string;
+  options?: string[];
+  correctAnswer: string;
+  justification: string;
+  sourcePage: number;
+  type: 'A' | 'C';
+  onAnswered?: (isCorrect: boolean) => void;
 }
 
-export function QuestionCard({ index, question: initialQuestion, answer, currentDifficulty: initialDifficulty }: QuestionCardProps) {
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [questionText, setQuestionText] = useState(initialQuestion);
-  const [difficulty, setDifficulty] = useState(initialDifficulty);
-  const [isAdjusting, setIsAdjusting] = useState(false);
+export function QuestionCard({ 
+  index, 
+  question, 
+  options, 
+  correctAnswer, 
+  justification, 
+  sourcePage, 
+  type,
+  onAnswered 
+}: QuestionCardProps) {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
-  const handleAdjustDifficulty = async (newDifficulty: string) => {
-    if (newDifficulty === difficulty) return;
-    
-    setIsAdjusting(true);
-    try {
-      const result = await adjustQuestionDifficulty({
-        question: questionText,
-        currentDifficulty: difficulty,
-        desiredDifficulty: newDifficulty,
-      });
-      setQuestionText(result.adjustedQuestion);
-      setDifficulty(newDifficulty);
-      toast({
-        title: "Dificuldade Ajustada",
-        description: `Questão agora está em nível ${newDifficulty}.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao ajustar",
-        description: "Não foi possível ajustar a dificuldade agora.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAdjusting(false);
+  const handleCheck = () => {
+    if (!selectedAnswer) {
+      toast({ title: "Selecione uma resposta", description: "Escolha uma opção antes de verificar.", variant: "destructive" });
+      return;
     }
+    setIsSubmitted(true);
+    const correct = selectedAnswer === correctAnswer;
+    onAnswered?.(correct);
   };
 
+  const isCorrect = selectedAnswer === correctAnswer;
+
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md border-l-4 border-l-primary">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/30 pb-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono">#{index}</Badge>
-          <Badge 
-            variant="secondary" 
-            className={`${
-              difficulty === 'hard' ? 'bg-destructive/10 text-destructive' : 
-              difficulty === 'medium' ? 'bg-accent/10 text-accent-foreground' : 
-              'bg-primary/10 text-primary-foreground'
-            }`}
-          >
-            {difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Médio' : 'Difícil'}
+    <Card className={`overflow-hidden transition-all border-l-8 ${isSubmitted ? (isCorrect ? 'border-l-green-500' : 'border-l-red-500') : 'border-l-primary'}`}>
+      <CardHeader className="flex flex-row items-center justify-between bg-muted/30 pb-4">
+        <div className="flex items-center gap-3">
+          <Badge className="h-7 w-7 flex items-center justify-center rounded-full font-bold">{index}</Badge>
+          <Badge variant="secondary" className="uppercase text-[10px] tracking-widest font-bold">
+            {type === 'A' ? 'Certo/Errado' : 'Múltipla Escolha'}
           </Badge>
         </div>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" disabled={isAdjusting} className="h-8 gap-1">
-              Ajustar Nível <ChevronDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleAdjustDifficulty("easy")}>Fácil</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAdjustDifficulty("medium")}>Médio</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAdjustDifficulty("hard")}>Difícil</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </CardHeader>
       
-      <CardContent className="pt-6">
-        <div className={`prose prose-sm max-w-none text-foreground ${isAdjusting ? 'opacity-50 grayscale animate-pulse' : ''}`}>
-          <p className="text-lg leading-relaxed whitespace-pre-wrap">{questionText}</p>
+      <CardContent className="pt-6 space-y-6">
+        <div className="text-lg leading-relaxed font-medium text-foreground whitespace-pre-wrap">
+          {question}
+        </div>
+
+        <div className="space-y-3">
+          {type === 'A' ? (
+            <div className="flex gap-4">
+              <Button 
+                variant={selectedAnswer === 'C' ? 'default' : 'outline'} 
+                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'C' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                onClick={() => !isSubmitted && setSelectedAnswer('C')}
+                disabled={isSubmitted}
+              >
+                <ThumbsUp className="mr-2 h-5 w-5" /> Certo
+              </Button>
+              <Button 
+                variant={selectedAnswer === 'E' ? 'default' : 'outline'} 
+                className={`flex-1 h-14 text-lg ${isSubmitted && correctAnswer === 'E' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                onClick={() => !isSubmitted && setSelectedAnswer('E')}
+                disabled={isSubmitted}
+              >
+                <ThumbsDown className="mr-2 h-5 w-5" /> Errado
+              </Button>
+            </div>
+          ) : (
+            <RadioGroup value={selectedAnswer || ""} onValueChange={(v) => !isSubmitted && setSelectedAnswer(v)} className="space-y-2">
+              {options?.map((opt, i) => {
+                const letter = String.fromCharCode(65 + i);
+                const isOptionCorrect = letter === correctAnswer;
+                const isOptionSelected = letter === selectedAnswer;
+
+                return (
+                  <div key={i} className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors ${
+                    isSubmitted 
+                      ? (isOptionCorrect ? 'bg-green-500/10 border-green-500' : isOptionSelected ? 'bg-red-500/10 border-red-500' : 'opacity-50')
+                      : 'hover:bg-muted/50 cursor-pointer'
+                  }`}>
+                    <RadioGroupItem value={letter} id={`q-${index}-${letter}`} disabled={isSubmitted} />
+                    <Label htmlFor={`q-${index}-${letter}`} className="flex-1 cursor-pointer font-medium">
+                      <span className="font-bold mr-2">{letter})</span> {opt}
+                    </Label>
+                  </div>
+                );
+              })}
+            </RadioGroup>
+          )}
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-start gap-4 border-t bg-muted/10 pt-4">
-        <div className="flex w-full justify-between items-center">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowAnswer(!showAnswer)}
-            className="gap-2"
-          >
-            {showAnswer ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {showAnswer ? "Esconder Resposta" : "Ver Resposta"}
+      <CardFooter className="flex flex-col gap-4 bg-muted/10 border-t p-6">
+        {!isSubmitted ? (
+          <Button onClick={handleCheck} className="w-full md:w-auto bg-primary hover:bg-primary/90">
+            Verificar Resposta
           </Button>
-          
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-accent">
-            <CheckCircle2 className="h-5 w-5" />
-          </Button>
-        </div>
+        ) : (
+          <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-300">
+            <div className={`p-4 rounded-xl border-2 flex items-start gap-3 ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              {isCorrect ? <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" /> : <XCircle className="h-6 w-6 text-red-600 shrink-0" />}
+              <div>
+                <h4 className={`font-bold ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                  {isCorrect ? 'Você acertou!' : 'Resposta Incorreta'}
+                </h4>
+                <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                  Gabarito: <span className="font-black underline">{correctAnswer === 'C' ? 'Certo' : correctAnswer === 'E' ? 'Errado' : correctAnswer}</span>
+                </p>
+              </div>
+            </div>
 
-        {showAnswer && (
-          <div className="w-full p-4 rounded-md bg-accent/5 border border-accent/20 animate-in zoom-in-95 duration-200">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-accent mb-2">Gabarito / Comentário</h4>
-            <p className="text-sm font-medium text-foreground italic">{answer}</p>
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl shadow-sm border space-y-3">
+              <div className="flex items-center gap-2 text-primary">
+                <Info className="h-5 w-5" />
+                <h5 className="font-bold uppercase text-xs tracking-wider">Justificativa do Professor</h5>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground italic whitespace-pre-wrap">
+                {justification}
+              </p>
+              <div className="pt-2 flex justify-end">
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 gap-2 font-semibold">
+                  <ExternalLink className="h-4 w-4" />
+                  Verificar fontes (Pág. {sourcePage})
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </CardFooter>

@@ -1,11 +1,12 @@
 
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Concurso AI Prep',
-  description: 'Gere questões para concurso com inteligência artificial de ponta.',
+  title: 'Questões AÍ - Simulados Inteligentes',
+  description: 'Gere simulados personalizados de PDFs com inteligência artificial.',
 };
 
 export default function RootLayout({
@@ -21,7 +22,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
