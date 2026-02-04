@@ -114,12 +114,11 @@ export function Header() {
           <div className="bg-background p-2 rounded-2xl shadow-lg border-2 border-accent/20">
             <div className="relative w-16 h-16 md:w-20 md:h-20">
               <Image 
-                src="/logo.png" 
+                src="/icon.png" 
                 alt="Questões AÍ" 
                 fill 
                 className="object-contain p-1"
                 onError={(e) => {
-                  // Fallback para quando o logo ainda não foi carregado
                   const target = e.target as HTMLImageElement;
                   target.src = "https://picsum.photos/seed/questoesai/200/200";
                 }}
