@@ -5,7 +5,7 @@ import pdf from 'pdf-parse';
 
 /**
  * Server action robusta para extrair texto de um arquivo PDF.
- * Inclui tratamento específico para erros de estrutura (bad XRef).
+ * Importante: Apenas funções assíncronas são exportadas aqui.
  */
 export async function extractTextFromPdf(formData: FormData): Promise<string> {
   const file = formData.get('file') as File;
@@ -15,17 +15,17 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Tenta extrair o texto. Se falhar por erro de XRef, fornece orientação clara.
+    // Tenta extrair o texto com tratamento para erros de XRef
     const data = await pdf(buffer).catch((err: any) => {
       const msg = err?.message || '';
       if (msg.includes('XRef') || msg.includes('xref') || msg.includes('corrupt')) {
-        throw new Error("Estrutura do PDF corrompida (bad XRef). Dica: Abra o arquivo no seu computador e 'Salve como PDF' ou 'Imprima como PDF' para corrigir a tabela de referências interna antes de enviar.");
+        throw new Error("Estrutura do PDF corrompida (bad XRef). Tente abrir o PDF e usar 'Imprimir como PDF' para corrigi-lo.");
       }
       throw err;
     });
     
     if (!data || !data.text) {
-      throw new Error("Não foi possível extrair texto deste PDF. Verifique se o arquivo não contém apenas imagens (scans) sem OCR.");
+      throw new Error("Não foi possível extrair texto deste PDF.");
     }
 
     const cleanedText = data.text
@@ -34,12 +34,12 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
       .trim();
 
     if (cleanedText.length < 50) {
-      throw new Error("O texto extraído é muito curto para gerar questões de qualidade. Certifique-se de que o PDF contém conteúdo textual legível.");
+      throw new Error("O texto extraído é muito curto para gerar questões.");
     }
 
     return cleanedText;
   } catch (error: any) {
     console.error('Erro no processamento de PDF:', error);
-    throw new Error(error.message || 'Falha crítica ao processar o documento PDF.');
+    throw new Error(error.message || 'Falha ao processar o documento PDF.');
   }
 }
