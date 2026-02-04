@@ -155,7 +155,6 @@ export function GeneratorView() {
       count
     };
     if (user && db) {
-      // FIX: Include userId and document ID to satisfy security rules
       addDoc(collection(db, "users", user.uid, "questionnaires"), { 
         ...newItem, 
         userId: user.uid, 
