@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useAuth } from "@/firebase";
@@ -59,7 +58,7 @@ export function Header() {
       <div className="container mx-auto flex h-full items-center justify-between px-4">
         {/* Lado Esquerdo: Link Home e Histórico */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity cursor-pointer">
+          <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity">
             <BookOpen className="h-6 w-6 text-accent" />
             <span>Questões <span className="text-accent text-2xl">AÍ</span></span>
           </Link>

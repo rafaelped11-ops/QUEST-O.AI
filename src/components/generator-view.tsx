@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -61,13 +60,14 @@ export function GeneratorView() {
       return;
     }
     setLoading(true);
+    setResults(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
       const pdfText = await extractTextFromPdf(formData);
       
       if (!pdfText || pdfText.length < 50) {
-        throw new Error("O texto extraído do PDF é muito curto para gerar questões.");
+        throw new Error("O texto extraído do PDF é muito curto ou o arquivo está protegido.");
       }
 
       const response = await generateQuestionsFromPdf({
@@ -80,9 +80,14 @@ export function GeneratorView() {
       setResults(response.questions);
       setStats({ correct: 0, incorrect: 0 });
       saveToHistory(file.name, "IA (PDF)", response.questions.length);
-      toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas com sucesso.` });
+      toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas.` });
     } catch (error: any) {
-      toast({ title: "Falha na Geração", description: error.message || "Falha ao processar o PDF. Verifique se a API do Gemini está ativa.", variant: "destructive" });
+      const is403 = error.message?.includes("403") || error.message?.includes("permission");
+      toast({ 
+        title: "Erro na Geração", 
+        description: is403 ? "Acesso negado pela API Gemini. Verifique se a 'Generative Language API' está ativa no seu Console do Google Cloud." : error.message, 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
@@ -118,7 +123,7 @@ export function GeneratorView() {
       }
       const response = await suggestEssayTopics({ content: baseContent });
       setEssayTopics(response.topics);
-      toast({ title: "Temas Gerados", description: "Escolha um tema para começar seu treino." });
+      toast({ title: "Temas Gerados", description: "Escolha um tema para começar." });
     } catch (error: any) {
       toast({ title: "Erro", description: error.message || "Falha ao sugerir temas.", variant: "destructive" });
     } finally {
@@ -146,12 +151,20 @@ export function GeneratorView() {
 
   const saveToHistory = (name: string, type: string, count: number) => {
     const newItem = {
+      id: Date.now().toString(),
       fileName: name,
       type,
       date: new Date().toISOString(),
       count,
-      userId: user?.uid || "anon"
+      userId: user?.uid || "anonymous"
     };
+
+    // Salva localmente primeiro (evita erro 403 imediato se não logado)
+    const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
+    const history = [newItem, ...existingHistory].slice(0, 20);
+    localStorage.setItem("study_history", JSON.stringify(history));
+
+    // Salva no Firestore apenas se estiver logado
     if (user && db) {
       const colRef = collection(db, "users", user.uid, "questionnaires");
       addDocumentNonBlocking(colRef, { 
@@ -159,9 +172,6 @@ export function GeneratorView() {
         createdAt: serverTimestamp() 
       });
     }
-    const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
-    const history = [{ ...newItem, id: Date.now() }, ...existingHistory].slice(0, 20);
-    localStorage.setItem("study_history", JSON.stringify(history));
   };
 
   const updateStats = (isCorrect: boolean | null) => {
@@ -254,11 +264,11 @@ export function GeneratorView() {
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
               <CardTitle className="text-xl font-black text-foreground">Identificação de Questões</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para formatar seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
-                placeholder="Cole aqui o enunciado, opções e gabarito se tiver..." 
+                placeholder="Cole aqui o enunciado, opções e gabarito..." 
                 className="min-h-[200px] bg-background border-primary/20 text-foreground" 
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
@@ -308,7 +318,7 @@ export function GeneratorView() {
               </div>
 
               <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
-                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
                 Sugerir Temas
               </Button>
 
@@ -316,7 +326,7 @@ export function GeneratorView() {
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                   <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela IA</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha seu desafio" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -328,7 +338,7 @@ export function GeneratorView() {
                 <div className="space-y-2">
                   <Label className="text-foreground font-bold dark:text-white">Sua Redação</Label>
                   <Textarea 
-                    placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
+                    placeholder="Desenvolva seu texto..." 
                     className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20 text-foreground" 
                     value={userEssay}
                     onChange={(e) => setUserEssay(e.target.value)}
@@ -342,43 +352,24 @@ export function GeneratorView() {
                     </div>
                     <Button 
                       onClick={handleCorrectEssay} 
-                      className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md disabled:opacity-100" 
+                      className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" 
                       disabled={loading || !userEssay || !selectedTopic}
                     >
-                      {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                      {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
                       Submeter para Correção
                     </Button>
-                    {(!userEssay || !selectedTopic) && (
-                      <p className="text-[10px] text-center text-muted-foreground font-medium italic">
-                        Escreva seu texto e selecione um tema para habilitar a correção.
-                      </p>
-                    )}
                   </div>
 
                   {essayCorrection && (
                     <div className="p-6 bg-muted/50 rounded-xl border-2 border-accent/20 space-y-4 animate-in fade-in zoom-in-95">
                       <div className="flex justify-between items-center border-b border-accent/10 pb-4">
                         <h4 className="font-black text-3xl text-accent">{essayCorrection.finalScore} <span className="text-sm font-normal text-muted-foreground">/ {maxScore}</span></h4>
-                        <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Correção Concluída</Badge>
+                        <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Concluída</Badge>
                       </div>
                       <div className="space-y-4 text-sm">
                         <div>
-                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback Especialista</p>
+                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback</p>
                           <p className="leading-relaxed font-medium text-foreground">{essayCorrection.feedback}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/20">
-                            <p className="font-black text-green-600 text-[10px] uppercase tracking-widest mb-1">Destaques</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs font-medium text-foreground">
-                              {essayCorrection.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                            </ul>
-                          </div>
-                          <div className="bg-accent/5 p-3 rounded-lg border border-accent/20">
-                            <p className="font-black text-accent-foreground text-[10px] uppercase tracking-widest mb-1">Evolução</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs font-medium text-foreground">
-                              {essayCorrection.weaknesses.map((w: string, i: number) => <li key={i}>{w}</li>)}
-                            </ul>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -395,17 +386,11 @@ export function GeneratorView() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
             <div>
               <h2 className="text-2xl font-black text-primary">Resultado do Simulado</h2>
-              <p className="text-muted-foreground font-medium">{results.length} questões processadas</p>
+              <p className="text-muted-foreground font-medium">{results.length} questões</p>
             </div>
             <div className="flex items-center gap-4">
-               {questionType === 'A' && (
-                <div className="text-center px-4 py-2 bg-accent/20 rounded-lg border border-accent/30">
-                  <p className="text-[10px] uppercase font-black text-accent-foreground">Padrão Cebraspe</p>
-                  <p className="text-xs text-accent-foreground/80 font-bold">1 Erro = -1 Acerto</p>
-                </div>
-               )}
               <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-accent/20 min-w-[180px]">
-                <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento Final</p>
+                <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento</p>
                 <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
                   {calculateAproveitamento()}%
                 </p>
