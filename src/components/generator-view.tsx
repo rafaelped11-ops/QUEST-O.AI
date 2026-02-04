@@ -287,7 +287,7 @@ export function GeneratorView() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Ou Carregar PDF</Label>
+                  <Label className="text-foreground font-bold dark:text-white">Ou Carregar PDF</Label>
                   <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
