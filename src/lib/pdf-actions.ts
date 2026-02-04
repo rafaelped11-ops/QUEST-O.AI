@@ -14,12 +14,24 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    
+    // Processamento do PDF no servidor
     const data = await pdf(buffer);
     
-    // Basic cleaning of the extracted text
-    return data.text.replace(/\s+/g, ' ').trim();
-  } catch (error) {
-    console.error('Erro ao extrair texto do PDF:', error);
-    throw new Error('Falha ao processar o documento PDF.');
+    if (!data || !data.text) {
+      throw new Error("O documento não contém texto legível.");
+    }
+
+    // Limpeza básica e normalização do texto extraído
+    return data.text
+      .replace(/\r\n/g, '\n')
+      .replace(/\s+/g, ' ')
+      .trim();
+  } catch (error: any) {
+    console.error('Erro na extração de PDF:', error.message);
+    throw new Error('Falha ao processar o documento PDF. Verifique se o arquivo não está protegido por senha.');
   }
 }
+
+// Configuração opcional para aumentar o tempo de resposta do servidor se necessário
+export const maxDuration = 60; 

@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -7,6 +8,12 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  serverExternalPackages: ['pdf-parse'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   images: {
     remotePatterns: [
