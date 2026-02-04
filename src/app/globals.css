@@ -4,20 +4,20 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%; /* Off-white slightly blueish */
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 195 52% 44%; /* Deep blue */
+    --primary: 195 52% 44%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 14 100% 79%; /* Soft orange #FFAB91 */
-    --accent-foreground: 222 47% 11%; /* Dark text for readability on orange */
+    --accent: 14 100% 79%; /* #FFAB91 */
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -26,7 +26,7 @@
     --radius: 1rem;
   }
   .dark {
-    --background: 222 47% 4%; /* Very deep blue-black */
+    --background: 222 47% 4%;
     --foreground: 210 40% 98%;
     --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;

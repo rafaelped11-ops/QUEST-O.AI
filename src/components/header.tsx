@@ -113,7 +113,7 @@ export function Header() {
             <div className="relative w-14 h-14 md:w-16 md:h-16 flex items-center justify-center overflow-hidden rounded-full">
               <img 
                 src="/icon.png" 
-                alt="Questões AÍ" 
+                alt="Logo" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
