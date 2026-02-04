@@ -32,6 +32,3 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
     throw new Error('Falha ao processar o documento PDF. Verifique se o arquivo não está protegido por senha.');
   }
 }
-
-// Configuração opcional para aumentar o tempo de resposta do servidor se necessário
-export const maxDuration = 60; 
