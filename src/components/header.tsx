@@ -16,6 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import Link from "next/link";
 
 export function Header() {
   const { user } = useUser();
@@ -58,10 +59,10 @@ export function Header() {
       <div className="container mx-auto flex h-full items-center justify-between px-4">
         {/* Lado Esquerdo: Nome do App e Histórico */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter">
+          <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity cursor-pointer">
             <BookOpen className="h-6 w-6 text-accent" />
             <span>Questões <span className="text-accent text-2xl">AÍ</span></span>
-          </div>
+          </Link>
           
           <Sheet onOpenChange={(open) => {
             if (open) {
@@ -76,7 +77,7 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
+                <SheetTitle className="flex items-center gap-2 text-foreground">
                   <LayoutDashboard className="h-5 w-5 text-accent" />
                   Meus Questionários
                 </SheetTitle>
@@ -95,7 +96,7 @@ export function Header() {
                     <div className="divide-y max-h-[60vh] overflow-y-auto pr-2">
                       {history.map((item) => (
                         <div key={item.id} className="py-4 space-y-1 hover:bg-muted/50 transition-colors px-2 rounded-lg cursor-pointer">
-                          <p className="font-bold text-sm truncate">{item.fileName}</p>
+                          <p className="font-bold text-sm truncate text-foreground">{item.fileName}</p>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span className="bg-accent/10 px-2 py-0.5 rounded text-accent-foreground font-bold text-[10px]">{item.type}</span>
                             <span>{item.count} itens • {new Date(item.date).toLocaleDateString()}</span>
@@ -120,7 +121,7 @@ export function Header() {
           </Button>
 
           {user ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-accent/20 font-bold hover:bg-accent/5">
+            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-accent/20 font-bold hover:bg-accent/5 text-foreground">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sair</span>
             </Button>

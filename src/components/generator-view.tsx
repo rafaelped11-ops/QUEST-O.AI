@@ -190,14 +190,14 @@ export function GeneratorView() {
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="pdf">Arquivo PDF</Label>
+                    <Label htmlFor="pdf" className="text-foreground font-bold">Arquivo PDF</Label>
                     <div className="flex items-center gap-2">
                       <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20" />
                       {file && <span className="text-xs text-accent font-black whitespace-nowrap">✓ Pronto</span>}
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="type">Tipo de Questão</Label>
+                    <Label htmlFor="type" className="text-foreground font-bold">Tipo de Questão</Label>
                     <Select value={questionType} onValueChange={(v: any) => setQuestionType(v)}>
                       <SelectTrigger id="type" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -207,11 +207,11 @@ export function GeneratorView() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="count">Quantidade (Máx 60)</Label>
+                    <Label htmlFor="count" className="text-foreground font-bold">Quantidade (Máx 60)</Label>
                     <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background border-primary/20" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="difficulty">Dificuldade</Label>
+                    <Label htmlFor="difficulty" className="text-foreground font-bold">Dificuldade</Label>
                     <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)}>
                       <SelectTrigger id="difficulty" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -233,17 +233,17 @@ export function GeneratorView() {
         <TabsContent value="manual">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardTitle className="text-xl font-black">Identificação de Questões</CardTitle>
+              <CardTitle className="text-xl font-black text-foreground">Identificação de Questões</CardTitle>
               <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
                 placeholder="Cole aqui o enunciado, opções e gabarito se tiver..." 
-                className="min-h-[200px] bg-background border-primary/20" 
+                className="min-h-[200px] bg-background border-primary/20 text-foreground" 
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
               />
-              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading || !manualText}>
+              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90 shadow-md" disabled={loading || !manualText}>
                 {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
               </Button>
             </CardContent>
