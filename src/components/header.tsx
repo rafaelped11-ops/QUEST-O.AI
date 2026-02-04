@@ -57,7 +57,7 @@ export function Header() {
   return (
     <header className="relative z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20 h-16">
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        {/* Lado Esquerdo: Nome do App e Histórico */}
+        {/* Lado Esquerdo: Link Home e Histórico */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity cursor-pointer">
             <BookOpen className="h-6 w-6 text-accent" />

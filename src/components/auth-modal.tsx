@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
@@ -29,23 +29,30 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     e.preventDefault();
     setLoading(true);
     try {
+      let user;
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        user = userCredential.user;
         toast({ title: "Bem-vindo de volta!", description: "Login realizado com sucesso." });
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        
-        // Inicializa o perfil do usuário no Firestore para evitar erros de permissão em subcoleções
-        await setDoc(doc(db, "users", user.uid), {
+        user = userCredential.user;
+        toast({ title: "Conta criada!", description: "Sua jornada rumo à aprovação começou." });
+      }
+
+      // Garante que o documento do usuário exista para evitar erros de permissão em subcoleções
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
           id: user.uid,
           email: user.email,
           themePreference: "light",
           createdAt: serverTimestamp()
-        });
-
-        toast({ title: "Conta criada!", description: "Sua jornada rumo à aprovação começou." });
+        }, { merge: true });
       }
+
       onClose();
     } catch (error: any) {
       toast({

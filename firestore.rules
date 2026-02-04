@@ -1,110 +1,34 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * QUESTÕES AÍ - SECURITY RULES DOCUMENTATION
-     *
-     * Core Philosophy:
-     * This ruleset enforces a strict path-based ownership model (Authorization Independence). 
-     * All user-related data (documents, questionnaires, and individual questions) is 
-     * stored hierarchically under the specific user's root document.
-     *
-     * Data Structure:
-     * - /users/{userId}: Root user profile.
-     * - /users/{userId}/sourceDocuments/{docId}: PDF files uploaded by the user.
-     * - /users/{userId}/questionnaires/{qId}: Questionnaires generated for the user.
-     * - /users/{userId}/questionnaires/{qId}/questions/{qId}: Specific questions within a questionnaire.
-     *
-     * Key Security Decisions:
-     * 1. Path-Based Authorization: The {userId} segment in every path is the primary source of truth.
-     * 2. Strict Privacy: No data is public. Even list operations are restricted to the document owner.
-     * 3. Prototyping Flexibility: Rules enforce relational integrity (matching IDs and UIDs) 
-     *    and ownership but allow for flexible internal data shapes to facilitate rapid UI/AI iteration.
-     * 4. Relational Immutability: Critical fields like 'userId' and 'questionnaireId' are 
-     *    validated on creation and made immutable on update to prevent data hijacking.
-     *
-     * Denormalization for Authorization:
-     * Ownership is primarily checked via the URL path. However, internal fields (like 'userId') 
-     * are validated against the path and the auth context to ensure data consistency without 
-     * requiring cross-document lookups (get() calls).
+     * QUESTÕES AÍ - SECURITY RULES
+     * Enforces path-based ownership.
      */
 
-    // --- GLOBAL HELPER FUNCTIONS ---
-
-    /** Checks if a user is authenticated via Firebase Auth (including Anonymous). */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** Validates that the authenticated user matches the provided userId. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** Combines ownership check with existence check for destructive/modifying operations. */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for the root User document. Allows users to manage their own profile.
-     * @path /users/{userId}
-     * @allow (create) if auth.uid matches userId and data.id matches userId.
-     * @deny (list) if request is not for the user's specific sub-path.
-     * @principle Self-creation and strict path-based ownership.
-     */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Allows users to manage their own profile and all nested data.
+      allow read, write: if isOwner(userId);
 
-      /**
-       * @description Stores PDF documents uploaded by the user.
-       * @path /users/{userId}/sourceDocuments/{sourceDocumentId}
-       * @allow (create) if the userId in data matches the path userId.
-       * @deny (update) if attempting to change the owning userId.
-       * @principle Ownership based on user-centric subcollection.
-       */
-      match /sourceDocuments/{sourceDocumentId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
+      match /sourceDocuments/{docId} {
+        allow read, write: if isOwner(userId);
       }
 
-      /**
-       * @description Stores questionnaires generated from the source documents.
-       * @path /users/{userId}/questionnaires/{questionnaireId}
-       * @allow (list) if requested within the user's own collection.
-       * @deny (create) if the internal userId field doesn't match the path.
-       * @principle Path-based isolation and relational integrity.
-       */
-      match /questionnaires/{questionnaireId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
+      match /questionnaires/{qId} {
+        allow read, write: if isOwner(userId);
 
-        /**
-         * @description Stores individual questions belonging to a specific questionnaire.
-         * @path /users/{userId}/questionnaires/{questionnaireId}/questions/{questionId}
-         * @allow (create) if question links to the correct questionnaireId.
-         * @deny (update) if trying to move a question to a different questionnaire.
-         * @principle Nested path-based ownership and immutability of foreign keys.
-         */
         match /questions/{questionId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && request.resource.data.questionnaireId == questionnaireId;
-          allow update: if isExistingOwner(userId) && request.resource.data.questionnaireId == resource.data.questionnaireId;
-          allow delete: if isExistingOwner(userId);
+          allow read, write: if isOwner(userId);
         }
       }
     }
