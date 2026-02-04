@@ -199,7 +199,7 @@ export function GeneratorView() {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Gerar Simulados Inéditos
+                  gerar questões
                 </>
               )}
             </Button>
