@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -59,7 +60,6 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
-      // Simulação de extração de texto para o protótipo
       const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
@@ -259,16 +259,16 @@ export function GeneratorView() {
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="text-foreground">Base de Conhecimento (Texto)</Label>
+                  <Label className="text-foreground font-bold">Base de Conhecimento (Texto)</Label>
                   <Textarea 
                     placeholder="Cole aqui o texto base..." 
                     value={essayContent}
                     onChange={(e) => setEssayContent(e.target.value)}
-                    className="bg-background border-accent/20 h-24"
+                    className="bg-background border-accent/20 h-24 text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground">Ou Carregar PDF</Label>
+                  <Label className="text-foreground font-bold">Ou Carregar PDF</Label>
                   <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/20 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
@@ -279,7 +279,7 @@ export function GeneratorView() {
                     />
                     <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1">
                       <FileUp className="h-6 w-6 text-accent" />
-                      <span className="text-xs font-bold text-accent-foreground">
+                      <span className="text-xs font-bold text-foreground">
                         {essayFile ? essayFile.name : "Selecionar Documento"}
                       </span>
                     </label>
@@ -287,7 +287,7 @@ export function GeneratorView() {
                 </div>
               </div>
 
-              <Button variant="secondary" onClick={handleSuggestTopics} disabled={loading} className="w-full bg-accent/20 hover:bg-accent/40 text-accent-foreground font-black">
+              <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
                 Sugerir 3 Temas com Base no Material
               </Button>
 
@@ -305,7 +305,7 @@ export function GeneratorView() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-foreground">Sua Redação</Label>
+                  <Label className="text-foreground font-bold">Sua Redação</Label>
                   <Textarea 
                     placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
                     className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20 text-foreground" 
@@ -319,7 +319,7 @@ export function GeneratorView() {
                       <Label className="font-black text-accent-foreground">Pontuação Máxima da Prova</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
-                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/80 text-accent-foreground shadow-lg" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
+                    <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
                       {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submeter para Correção"}
                     </Button>
                   </div>

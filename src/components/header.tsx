@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useUser, useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, Moon, Sun, History, LayoutDashboard } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, History, LayoutDashboard, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { AuthModal } from "./auth-modal";
@@ -54,9 +55,14 @@ export function Header() {
 
   return (
     <header className="relative z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20 h-16">
-      <div className="container mx-auto flex h-full items-center justify-between px-4 relative">
-        {/* Lado Esquerdo: Histórico */}
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto flex h-full items-center justify-between px-4">
+        {/* Lado Esquerdo: Nome do App e Histórico */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter">
+            <BookOpen className="h-6 w-6 text-accent" />
+            <span>Questões <span className="text-accent text-2xl">AÍ</span></span>
+          </div>
+          
           <Sheet onOpenChange={(open) => {
             if (open) {
               setHistory(JSON.parse(localStorage.getItem("study_history") || "[]"));
@@ -105,21 +111,6 @@ export function Header() {
               </div>
             </SheetContent>
           </Sheet>
-        </div>
-
-        {/* Logo Centralizado Flutuante - Agora com caminho fixo para /logo.png */}
-        <div className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2 z-[60]">
-          <div className="bg-white dark:bg-card border-2 border-accent/40 rounded-full p-2 shadow-2xl overflow-hidden h-20 w-20 md:h-24 md:w-24 flex items-center justify-center">
-            <img 
-              src="/logo.png" 
-              alt="Questões AÍ Logo" 
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                // Em caso de erro, remove o contêiner para não ficar um círculo vazio
-                e.currentTarget.parentElement?.classList.add('hidden');
-              }}
-            />
-          </div>
         </div>
 
         {/* Lado Direito: Tema e Auth */}
