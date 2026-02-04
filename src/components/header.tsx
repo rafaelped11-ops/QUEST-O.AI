@@ -107,15 +107,16 @@ export function Header() {
           </Sheet>
         </div>
 
-        {/* Logo Centralizado Flutuante */}
+        {/* Logo Centralizado Flutuante - Agora com caminho fixo para /logo.png */}
         <div className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2 z-[60]">
-          <div className="bg-background border-2 border-accent/40 rounded-full p-2 shadow-2xl overflow-hidden h-20 w-20 md:h-24 md:w-24 flex items-center justify-center">
+          <div className="bg-white dark:bg-card border-2 border-accent/40 rounded-full p-2 shadow-2xl overflow-hidden h-20 w-20 md:h-24 md:w-24 flex items-center justify-center">
             <img 
               src="/logo.png" 
-              alt="Logo" 
+              alt="Questões AÍ Logo" 
               className="w-full h-full object-contain"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                // Em caso de erro, remove o contêiner para não ficar um círculo vazio
+                e.currentTarget.parentElement?.classList.add('hidden');
               }}
             />
           </div>

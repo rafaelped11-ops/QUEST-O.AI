@@ -184,7 +184,7 @@ export function GeneratorView() {
         <TabsContent value="pdf">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardDescription className="text-foreground/70 font-medium">Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Carregue seu PDF e deixe nossa IA criar um simulado exclusivo focado no seu material.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
@@ -234,7 +234,7 @@ export function GeneratorView() {
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
               <CardTitle className="text-xl font-black">Identificação de Questões</CardTitle>
-              <CardDescription className="text-foreground/70 font-medium">Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para que a IA identifique e formate para seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
@@ -254,12 +254,12 @@ export function GeneratorView() {
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
               <CardTitle className="text-xl font-black text-primary">Treino de Redação</CardTitle>
-              <CardDescription className="text-foreground/70 font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Base de Conhecimento (Texto)</Label>
+                  <Label className="text-foreground">Base de Conhecimento (Texto)</Label>
                   <Textarea 
                     placeholder="Cole aqui o texto base..." 
                     value={essayContent}
@@ -268,7 +268,7 @@ export function GeneratorView() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Ou Carregar PDF</Label>
+                  <Label className="text-foreground">Ou Carregar PDF</Label>
                   <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/20 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
@@ -295,7 +295,7 @@ export function GeneratorView() {
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                   <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela IA</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha seu desafio de hoje" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -305,10 +305,10 @@ export function GeneratorView() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Sua Redação</Label>
+                  <Label className="text-foreground">Sua Redação</Label>
                   <Textarea 
                     placeholder="Desenvolva seu texto respeitando o tema escolhido..." 
-                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20" 
+                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20 text-foreground" 
                     value={userEssay}
                     onChange={(e) => setUserEssay(e.target.value)}
                   />
@@ -317,7 +317,7 @@ export function GeneratorView() {
                   <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
                       <Label className="font-black text-accent-foreground">Pontuação Máxima da Prova</Label>
-                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20" />
+                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
                     <Button onClick={handleCorrectEssay} className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/80 text-accent-foreground shadow-lg" disabled={loading || !userEssay || (!selectedTopic && !essayTopics)}>
                       {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submeter para Correção"}
@@ -333,18 +333,18 @@ export function GeneratorView() {
                       <div className="space-y-4 text-sm">
                         <div>
                           <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback Especialista</p>
-                          <p className="leading-relaxed font-medium">{essayCorrection.feedback}</p>
+                          <p className="leading-relaxed font-medium text-foreground">{essayCorrection.feedback}</p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/20">
                             <p className="font-black text-green-600 text-[10px] uppercase tracking-widest mb-1">Destaques</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs font-medium">
+                            <ul className="list-disc list-inside space-y-1 text-xs font-medium text-foreground">
                               {essayCorrection.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
                             </ul>
                           </div>
                           <div className="bg-accent/5 p-3 rounded-lg border border-accent/20">
                             <p className="font-black text-accent-foreground text-[10px] uppercase tracking-widest mb-1">Evolução</p>
-                            <ul className="list-disc list-inside space-y-1 text-xs font-medium">
+                            <ul className="list-disc list-inside space-y-1 text-xs font-medium text-foreground">
                               {essayCorrection.weaknesses.map((w: string, i: number) => <li key={i}>{w}</li>)}
                             </ul>
                           </div>
