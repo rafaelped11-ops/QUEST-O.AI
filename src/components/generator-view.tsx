@@ -59,6 +59,7 @@ export function GeneratorView() {
     }
     setLoading(true);
     try {
+      // Nota: Em um ambiente real, o texto seria extraído do PDF aqui.
       const mockPdfText = "O Direito Administrativo é o ramo do direito público que estuda os princípios e normas que regem a função administrativa. Seus pilares são o interesse público e a legalidade."; 
       const response = await generateQuestionsFromPdf({
         pdfText: mockPdfText,
@@ -166,7 +167,7 @@ export function GeneratorView() {
   };
 
   return (
-    <div className="space-y-8 pb-12 mt-10">
+    <div className="space-y-8 pb-12 mt-16">
       <Tabs defaultValue="pdf" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
           <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
@@ -175,7 +176,7 @@ export function GeneratorView() {
           <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
             <Pencil className="h-4 w-4" /> Entrada Manual
           </TabsTrigger>
-          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-accent data-[state=active]:text-accent-foreground rounded-lg">
+          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
             <Sparkles className="h-4 w-4" /> Prova Discursiva
           </TabsTrigger>
         </TabsList>
@@ -250,9 +251,9 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="discursiva">
-          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-accent/20">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardTitle className="text-xl font-black text-accent">Treino de Redação</CardTitle>
+              <CardTitle className="text-xl font-black text-primary">Treino de Redação</CardTitle>
               <CardDescription className="text-foreground/70 font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

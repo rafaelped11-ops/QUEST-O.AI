@@ -109,12 +109,12 @@ export function Header() {
 
         {/* Logo Centralizado (Flutuando na borda) */}
         <div className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2 z-[60]">
-          <div className="bg-background p-1.5 rounded-full shadow-2xl border-2 border-accent/30 hover:scale-105 transition-transform">
-            <div className="relative w-14 h-14 md:w-16 md:h-16 flex items-center justify-center overflow-hidden rounded-full">
+          <div className="bg-background p-1 rounded-full shadow-2xl border-4 border-accent/40 hover:scale-105 transition-all duration-300">
+            <div className="relative w-20 h-20 md:w-24 md:h-24 flex items-center justify-center overflow-hidden rounded-full bg-white dark:bg-zinc-900">
               <img 
                 src="/icon.png" 
                 alt="Logo" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-2"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = "https://picsum.photos/seed/questoesai/200/200";
