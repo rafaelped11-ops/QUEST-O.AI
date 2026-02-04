@@ -4,7 +4,8 @@
 import pdf from 'pdf-parse';
 
 /**
- * Server action para extrair texto de um arquivo PDF.
+ * Server action robusta para extrair texto de um arquivo PDF.
+ * Inclui tratamento específico para erros de estrutura (bad XRef).
  */
 export async function extractTextFromPdf(formData: FormData): Promise<string> {
   const file = formData.get('file') as File;
@@ -14,17 +15,17 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Processamento do PDF no servidor usando pdf-parse
-    // Tratamento específico para erros de estrutura do PDF (como bad XRef)
+    // Tenta extrair o texto. Se falhar por erro de XRef, fornece orientação clara.
     const data = await pdf(buffer).catch((err: any) => {
-      if (err.message && (err.message.includes('XRef') || err.message.includes('xref'))) {
-        throw new Error("O PDF possui uma estrutura corrompida ou incompatível (bad XRef). Tente salvar o arquivo novamente como PDF ou use um arquivo diferente.");
+      const msg = err?.message || '';
+      if (msg.includes('XRef') || msg.includes('xref') || msg.includes('corrupt')) {
+        throw new Error("Estrutura do PDF corrompida (bad XRef). Dica: Abra o arquivo no seu computador e 'Salve como PDF' ou 'Imprima como PDF' para corrigir a tabela de referências interna antes de enviar.");
       }
       throw err;
     });
     
     if (!data || !data.text) {
-      throw new Error("O PDF parece estar vazio ou não contém texto extraível.");
+      throw new Error("Não foi possível extrair texto deste PDF. Verifique se o arquivo não contém apenas imagens (scans) sem OCR.");
     }
 
     const cleanedText = data.text
@@ -32,14 +33,13 @@ export async function extractTextFromPdf(formData: FormData): Promise<string> {
       .replace(/\s+/g, ' ')
       .trim();
 
-    if (cleanedText.length < 10) {
-      throw new Error("O texto extraído é insuficiente para gerar questões. Verifique se o documento não contém apenas imagens (scans sem OCR).");
+    if (cleanedText.length < 50) {
+      throw new Error("O texto extraído é muito curto para gerar questões de qualidade. Certifique-se de que o PDF contém conteúdo textual legível.");
     }
 
     return cleanedText;
   } catch (error: any) {
-    console.error('Erro na extração de PDF:', error);
-    const errorMsg = error?.message || 'Erro desconhecido ao processar o arquivo';
-    throw new Error(errorMsg);
+    console.error('Erro no processamento de PDF:', error);
+    throw new Error(error.message || 'Falha crítica ao processar o documento PDF.');
   }
 }
