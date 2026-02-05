@@ -4,7 +4,8 @@ import { openAI } from 'genkitx-openai';
 /**
  * Configuração central do Genkit v1.x.
  * Utilizamos o plugin genkitx-openai para acessar a DeepSeek.
- * O prefixo do modelo para este plugin é 'openai/'.
+ * Para evitar o erro 'plugin is not a function' no Genkit 1.x, 
+ * o plugin é passado como uma função de inicialização.
  */
 
 const deepseekKey =
@@ -12,7 +13,8 @@ const deepseekKey =
 
 export const ai = genkit({
   plugins: [
-    openAI({
+    // Envolvemos a chamada do plugin em uma função para compatibilidade estrita com o Genkit 1.x
+    () => openAI({
       apiKey: deepseekKey,
       baseURL: 'https://api.deepseek.com/v1',
     }),
