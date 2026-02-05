@@ -56,19 +56,14 @@ const generateQuestionsPrompt = ai.definePrompt({
 });
 
 export async function generateQuestionsFromPdf(input: GenerateQuestionsFromPdfInput): Promise<GenerateQuestionsFromPdfOutput> {
-  try {
-    const { output } = await generateQuestionsPrompt({
-      ...input,
-      isTypeA: input.questionType === 'A',
-    });
-    
-    if (!output || !output.questions) {
-      throw new Error("O motor de IA DeepSeek não retornou questões válidas.");
-    }
-    
-    return JSON.parse(JSON.stringify(output)); // Garante serialização limpa para Server Action
-  } catch (error: any) {
-    console.error("Erro no fluxo generateQuestionsFromPdf:", error);
-    throw new Error(error.message || "Falha na geração das questões.");
+  const { output } = await generateQuestionsPrompt({
+    ...input,
+    isTypeA: input.questionType === 'A',
+  });
+  
+  if (!output) {
+    throw new Error("Falha ao obter resposta do motor de IA.");
   }
+  
+  return JSON.parse(JSON.stringify(output));
 }
