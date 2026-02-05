@@ -60,5 +60,5 @@ export async function generateQuestionsFromPdf(input: any) {
     throw new Error("Falha ao obter resposta do motor de IA.");
   }
   
-  return JSON.parse(JSON.stringify(output));
+  return output;
 }
