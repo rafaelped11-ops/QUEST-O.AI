@@ -12,12 +12,10 @@ const SummarizeStudyMaterialInputSchema = z.object({
     .string()
     .describe("The study material to summarize. Should be text."),
 });
-export type SummarizeStudyMaterialInput = z.infer<typeof SummarizeStudyMaterialInputSchema>;
 
 const SummarizeStudyMaterialOutputSchema = z.object({
   summary: z.string().describe('A concise summary of the study material.'),
 });
-export type SummarizeStudyMaterialOutput = z.infer<typeof SummarizeStudyMaterialOutputSchema>;
 
 const summarizeStudyMaterialPrompt = ai.definePrompt({
   name: 'summarizeStudyMaterialPrompt',
@@ -27,7 +25,7 @@ const summarizeStudyMaterialPrompt = ai.definePrompt({
   prompt: `You are an expert summarizer. Summarize the following study material, extracting the key concepts:\n\n{{{studyMaterial}}}`,
 });
 
-export async function summarizeStudyMaterial(input: SummarizeStudyMaterialInput): Promise<SummarizeStudyMaterialOutput> {
+export async function summarizeStudyMaterial(input: z.infer<typeof SummarizeStudyMaterialInputSchema>) {
   const { output } = await summarizeStudyMaterialPrompt(input);
   return output!;
 }

@@ -3,10 +3,6 @@
 
 /**
  * @fileOverview This file defines a Genkit flow for adjusting the difficulty level of generated questions.
- *
- * adjustQuestionDifficulty - A function that adjusts the difficulty level of a given question.
- * AdjustQuestionDifficultyInput - The input type for the adjustQuestionDifficulty function.
- * AdjustQuestionDifficultyOutput - The return type for the adjustQuestionDifficulty function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -21,24 +17,12 @@ const AdjustQuestionDifficultyInputSchema = z.object({
     .string()
     .describe('The desired difficulty level of the question (e.g., easy, medium, hard).'),
 });
-export type AdjustQuestionDifficultyInput = z.infer<
-  typeof AdjustQuestionDifficultyInputSchema
->;
 
 const AdjustQuestionDifficultyOutputSchema = z.object({
   adjustedQuestion: z
     .string()
     .describe('The question adjusted to the desired difficulty level.'),
 });
-export type AdjustQuestionDifficultyOutput = z.infer<
-  typeof AdjustQuestionDifficultyOutputSchema
->;
-
-export async function adjustQuestionDifficulty(
-  input: AdjustQuestionDifficultyInput
-): Promise<AdjustQuestionDifficultyOutput> {
-  return adjustQuestionDifficultyFlow(input);
-}
 
 const adjustQuestionDifficultyPrompt = ai.definePrompt({
   name: 'adjustQuestionDifficultyPrompt',
@@ -59,14 +43,7 @@ const adjustQuestionDifficultyPrompt = ai.definePrompt({
   `,
 });
 
-const adjustQuestionDifficultyFlow = ai.defineFlow(
-  {
-    name: 'adjustQuestionDifficultyFlow',
-    inputSchema: AdjustQuestionDifficultyInputSchema,
-    outputSchema: AdjustQuestionDifficultyOutputSchema,
-  },
-  async input => {
-    const {output} = await adjustQuestionDifficultyPrompt(input);
-    return output!;
-  }
-);
+export async function adjustQuestionDifficulty(input: z.infer<typeof AdjustQuestionDifficultyInputSchema>) {
+  const {output} = await adjustQuestionDifficultyPrompt(input);
+  return output!;
+}
