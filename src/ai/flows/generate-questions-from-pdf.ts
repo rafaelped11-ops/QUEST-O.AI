@@ -14,8 +14,6 @@ const GenerateQuestionsFromPdfInputSchema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard']).describe('Nível de dificuldade.'),
 });
 
-export type GenerateQuestionsFromPdfInput = z.infer<typeof GenerateQuestionsFromPdfInputSchema>;
-
 const GenerateQuestionsFromPdfOutputSchema = z.object({
   questions: z.array(
     z.object({
@@ -27,8 +25,6 @@ const GenerateQuestionsFromPdfOutputSchema = z.object({
     })
   ),
 });
-
-export type GenerateQuestionsFromPdfOutput = z.infer<typeof GenerateQuestionsFromPdfOutputSchema>;
 
 const generateQuestionsPrompt = ai.definePrompt({
   name: 'generateQuestionsFromPdfPrompt',
@@ -54,7 +50,7 @@ const generateQuestionsPrompt = ai.definePrompt({
   {{{pdfText}}}`,
 });
 
-export async function generateQuestionsFromPdf(input: GenerateQuestionsFromPdfInput): Promise<GenerateQuestionsFromPdfOutput> {
+export async function generateQuestionsFromPdf(input: any) {
   const { output } = await generateQuestionsPrompt({
     ...input,
     isTypeA: input.questionType === 'A',
