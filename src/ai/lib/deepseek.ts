@@ -45,7 +45,13 @@ export async function callDeepSeek<T>(params: {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Erro na API DeepSeek (${response.status}): ${errorData.error?.message || response.statusText}`);
+      const statusCode = response.status;
+      
+      if (statusCode === 402) {
+        throw new Error('Saldo insuficiente na conta DeepSeek. Por favor, recarregue seus créditos ou utilize uma nova chave.');
+      }
+      
+      throw new Error(`Erro na API DeepSeek (${statusCode}): ${errorData.error?.message || response.statusText}`);
     }
 
     const result = await response.json();
