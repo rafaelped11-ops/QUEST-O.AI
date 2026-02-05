@@ -5,7 +5,7 @@ import { openAI } from 'genkitx-openai';
 /**
  * Configuração central do Genkit v1.x.
  * Utilizamos o plugin genkitx-openai para acessar a DeepSeek.
- * O plugin registra o namespace 'openai' automaticamente.
+ * O prefixo do modelo será 'openai/'.
  */
 
 const deepseekKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
