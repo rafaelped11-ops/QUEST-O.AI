@@ -1,36 +1,31 @@
 'use server';
 /**
- * @fileOverview Sumariza materiais de estudo fornecidos pelo usuário.
- *
- * - summarizeStudyMaterial - Função que lida com o processo de sumarização.
+ * @fileOverview Sumariza materiais de estudo utilizando integração direta com DeepSeek.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-
-const SummarizeStudyMaterialInputSchema = z.object({
-  studyMaterial: z
-    .string()
-    .describe("O material de estudo para sumarizar."),
-});
+import { z } from 'zod';
+import { callDeepSeek } from '@/ai/lib/deepseek';
 
 const SummarizeStudyMaterialOutputSchema = z.object({
-  summary: z.string().describe('Um resumo conciso do material de estudo.'),
+  summary: z.string(),
 });
 
-const summarizeStudyMaterialPrompt = ai.definePrompt({
-  name: 'summarizeStudyMaterialPrompt',
-  model: 'openai/deepseek-chat',
-  input: { schema: SummarizeStudyMaterialInputSchema },
-  output: { schema: SummarizeStudyMaterialOutputSchema },
-  prompt: `Você é um especialista em resumos educacionais. 
-  Sua tarefa é extrair os conceitos-chave e fornecer um resumo estruturado e conciso do seguinte material:
-
-  Material:
-  {{{studyMaterial}}}`,
-});
-
-export async function summarizeStudyMaterial(input: z.infer<typeof SummarizeStudyMaterialInputSchema>) {
-  const { output } = await summarizeStudyMaterialPrompt(input);
-  return output!;
+export async function summarizeStudyMaterial(input: { studyMaterial: string }) {
+  return summarizeStudyMaterialFlow(input);
 }
+
+const summarizeStudyMaterialFlow = ai.defineFlow(
+  {
+    name: 'summarizeStudyMaterialFlow',
+    inputSchema: z.object({ studyMaterial: z.string() }),
+    outputSchema: SummarizeStudyMaterialOutputSchema,
+  },
+  async (input) => {
+    return await callDeepSeek({
+      system: 'Você é um especialista em resumos educacionais concisos e estruturados.',
+      prompt: `Extraia os conceitos-chave e forneça um resumo estruturado do seguinte material:\n\n${input.studyMaterial}`,
+      schema: SummarizeStudyMaterialOutputSchema,
+    });
+  }
+);

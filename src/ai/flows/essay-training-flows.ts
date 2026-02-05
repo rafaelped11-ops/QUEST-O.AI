@@ -1,76 +1,63 @@
-
 'use server';
 
 /**
- * @fileOverview Fluxos para treino de prova discursiva: sugestão de temas e correção.
+ * @fileOverview Fluxos para treino de prova discursiva utilizando integração direta com DeepSeek.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
+import { callDeepSeek } from '@/ai/lib/deepseek';
 
 // --- Sugestão de Temas ---
 
-const SuggestTopicsInputSchema = z.object({
-  content: z.string().describe('O conteúdo base para sugerir os temas.'),
-});
-
 const SuggestTopicsOutputSchema = z.object({
-  topics: z.array(z.string()).length(3).describe('Três temas prováveis baseados no conteúdo.'),
-});
-
-const suggestTopicsPrompt = ai.definePrompt({
-  name: 'suggestEssayTopicsPrompt',
-  model: 'openai/deepseek-chat',
-  input: { schema: SuggestTopicsInputSchema },
-  output: { schema: SuggestTopicsOutputSchema },
-  prompt: `Baseado no seguinte conteúdo de estudo, sugira EXATAMENTE 3 temas prováveis para uma prova discursiva de alto nível (estilo Cebraspe).
-  Os temas devem ser desafiadores e exigir conhecimento profundo do texto.
-  
-  CONTEÚDO:
-  {{{content}}}`,
+  topics: z.array(z.string()).length(3),
 });
 
 export async function suggestEssayTopics(input: { content: string }) {
-  const { output } = await suggestTopicsPrompt(input);
-  return output!;
+  return suggestEssayTopicsFlow(input);
 }
+
+const suggestEssayTopicsFlow = ai.defineFlow(
+  {
+    name: 'suggestEssayTopicsFlow',
+    inputSchema: z.object({ content: z.string() }),
+    outputSchema: SuggestTopicsOutputSchema,
+  },
+  async (input) => {
+    return await callDeepSeek({
+      system: 'Você é um especialista em sugerir temas de redação para concursos de alto nível (estilo Cebraspe).',
+      prompt: `Baseado no seguinte conteúdo, sugira EXATAMENTE 3 temas prováveis para uma prova discursiva desafiadora:\n\n${input.content}`,
+      schema: SuggestTopicsOutputSchema,
+    });
+  }
+);
 
 // --- Correção de Redação ---
 
-const CorrectEssayInputSchema = z.object({
-  topic: z.string().describe('O tema escolhido.'),
-  essay: z.string().describe('O texto escrito pelo usuário.'),
-  maxScore: z.number().describe('A pontuação máxima possível.'),
-});
-
 const CorrectEssayOutputSchema = z.object({
-  finalScore: z.number().describe('A nota final atribuída.'),
-  feedback: z.string().describe('Feedback detalhado sobre gramática, conteúdo e estrutura.'),
-  strengths: z.array(z.string()).describe('Pontos fortes do texto.'),
-  weaknesses: z.array(z.string()).describe('Pontos a melhorar.'),
-  detailedAnalysis: z.string().describe('Análise critério a critério (Cebraspe).'),
+  finalScore: z.number(),
+  feedback: z.string(),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  detailedAnalysis: z.string(),
 });
 
-const correctEssayPrompt = ai.definePrompt({
-  name: 'correctEssayPrompt',
-  model: 'openai/deepseek-chat',
-  input: { schema: CorrectEssayInputSchema },
-  output: { schema: CorrectEssayOutputSchema },
-  prompt: `Você é um corretor especializado em bancas de concurso, especificamente Cebraspe.
-  Corrija a redação abaixo sobre o tema "{{topic}}".
-  A pontuação máxima permitida é {{maxScore}}.
-  
-  CRITÉRIOS DE AVALIAÇÃO:
-  1. Apresentação e Legibilidade.
-  2. Estrutura Textual.
-  3. Desenvolvimento do Tema (Conhecimento Técnico).
-  4. Domínio da Norma Culta (Gramática).
-  
-  REDAÇÃO DO USUÁRIO:
-  {{{essay}}}`,
-});
-
-export async function correctEssay(input: z.infer<typeof CorrectEssayInputSchema>) {
-  const { output } = await correctEssayPrompt(input);
-  return output!;
+export async function correctEssay(input: { topic: string; essay: string; maxScore: number }) {
+  return correctEssayFlow(input);
 }
+
+const correctEssayFlow = ai.defineFlow(
+  {
+    name: 'correctEssayFlow',
+    inputSchema: z.any(),
+    outputSchema: CorrectEssayOutputSchema,
+  },
+  async (input) => {
+    return await callDeepSeek({
+      system: `Você é um corretor especializado em bancas de concurso (Cebraspe). A pontuação máxima é ${input.maxScore}.`,
+      prompt: `Corrija a seguinte redação sobre o tema "${input.topic}":\n\n${input.essay}`,
+      schema: CorrectEssayOutputSchema,
+    });
+  }
+);

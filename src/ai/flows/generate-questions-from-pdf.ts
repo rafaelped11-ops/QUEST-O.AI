@@ -1,65 +1,62 @@
-
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF utilizando o motor DeepSeek via Genkit.
+ * @fileOverview Gera questões de concurso a partir de um documento PDF utilizando integração direta com DeepSeek.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
+import { callDeepSeek } from '@/ai/lib/deepseek';
 
-const GenerateQuestionsFromPdfInputSchema = z.object({
-  pdfText: z.string().describe('O texto extraído do documento PDF.'),
-  questionType: z.enum(['A', 'C']).describe('Tipo A (Certo/Errado) ou C (Múltipla Escolha).'),
-  numberOfQuestions: z.number().int().min(1).max(60).describe('Número de questões desejadas.'),
-  difficulty: z.enum(['easy', 'medium', 'hard']).describe('Nível de dificuldade.'),
+const QuestionSchema = z.object({
+  text: z.string(),
+  options: z.array(z.string()).optional(),
+  correctAnswer: z.string(),
+  justification: z.string(),
+  sourcePage: z.number(),
 });
 
 const GenerateQuestionsFromPdfOutputSchema = z.object({
-  questions: z.array(
-    z.object({
-      text: z.string().describe('O enunciado da questão.'),
-      options: z.array(z.string()).optional().describe('Opções de A a E para múltipla escolha.'),
-      correctAnswer: z.string().describe('A resposta correta (C/E para Tipo A ou a letra da opção para Tipo C).'),
-      justification: z.string().describe('Justificativa pedagógica detalhada da questão baseada no texto.'),
-      sourcePage: z.number().describe('Número da página aproximada no documento original de onde a informação foi extraída.'),
-    })
-  ),
+  questions: z.array(QuestionSchema),
 });
 
-const generateQuestionsPrompt = ai.definePrompt({
-  name: 'generateQuestionsFromPdfPrompt',
-  model: 'openai/deepseek-chat',
-  input: { 
-    schema: GenerateQuestionsFromPdfInputSchema.extend({ isTypeA: z.boolean() }) 
-  },
-  output: { 
-    schema: GenerateQuestionsFromPdfOutputSchema 
-  },
-  prompt: `Você é um especialista em bancas examinadoras de concursos de alto nível (Cebraspe, FGV, FCC).
-  Sua missão é criar {{numberOfQuestions}} questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
-  
-  DIRETRIZES:
-  1. ABORDAGEM INTEGRAL: Varra todo o documento, não se limite ao início. Crie um simulado que cubra todos os tópicos importantes e regras citadas.
-  2. INEDITISMO: Não use questões conhecidas. Crie novas situações-problema ou afirmações técnicas baseadas nas regras do PDF.
-  3. FORMATO: {{#if isTypeA}}Estilo Cebraspe (Certo ou Errado). A resposta deve ser 'C' ou 'E'.{{else}}Múltipla Escolha (A a E). Forneça 5 opções claras.{{/if}}
-  4. DIFICULDADE: {{difficulty}}.
-  5. JUSTIFICATIVA: Explique detalhadamente por que o item está correto ou incorreto, citando o conceito do texto.
-  6. PÁGINA: Identifique a página ou seção do texto de onde a questão foi extraída.
-  
-  DOCUMENTO:
-  {{{pdfText}}}`,
-});
-
-export async function generateQuestionsFromPdf(input: any) {
-  const { output } = await generateQuestionsPrompt({
-    ...input,
-    isTypeA: input.questionType === 'A',
-  });
-  
-  if (!output) {
-    throw new Error("Falha ao obter resposta do motor de IA.");
-  }
-  
-  return output;
+export async function generateQuestionsFromPdf(input: {
+  pdfText: string;
+  questionType: 'A' | 'C';
+  numberOfQuestions: number;
+  difficulty: string;
+}) {
+  return generateQuestionsFromPdfFlow(input);
 }
+
+const generateQuestionsFromPdfFlow = ai.defineFlow(
+  {
+    name: 'generateQuestionsFromPdfFlow',
+    inputSchema: z.any(),
+    outputSchema: GenerateQuestionsFromPdfOutputSchema,
+  },
+  async (input) => {
+    const isTypeA = input.questionType === 'A';
+    const format = isTypeA 
+      ? "Estilo Cebraspe (Certo ou Errado). A resposta deve ser 'C' ou 'E'." 
+      : "Múltipla Escolha (A a E). Forneça exatamente 5 opções claras.";
+
+    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto abaixo.
+    FORMATO: ${format}
+    
+    TEXTO:
+    ${input.pdfText}`;
+
+    const system = `Você é um especialista em bancas examinadoras de concursos de alto nível (Cebraspe, FGV, FCC).
+    Sua missão é criar questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
+    Varra todo o documento e forneça justificativas pedagógicas detalhadas citando a página aproximada.`;
+
+    const output = await callDeepSeek({
+      system,
+      prompt,
+      schema: GenerateQuestionsFromPdfOutputSchema,
+    });
+
+    return output;
+  }
+);
