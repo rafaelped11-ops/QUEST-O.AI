@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Summarizes study material provided by the user.

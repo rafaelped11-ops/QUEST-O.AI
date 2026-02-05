@@ -1,6 +1,5 @@
-
 import { genkit } from 'genkit';
-import openAI from 'genkitx-openai';
+import { openAI } from 'genkitx-openai';
 
 /**
  * Configuração central do Genkit v1.x.
