@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   model: 'openai/deepseek-chat',
   input: {schema: SummarizeStudyMaterialInputSchema},
   output: {schema: SummarizeStudyMaterialOutputSchema},
-  prompt: `You are an expert summarizer.  Summarize the following study material, extracting the key concepts:\n\n{{{studyMaterial}}}`,
+  prompt: `You are an expert summarizer. Summarize the following study material, extracting the key concepts:\n\n{{{studyMaterial}}}`,
 });
 
 const summarizeStudyMaterialFlow = ai.defineFlow(
