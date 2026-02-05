@@ -3,10 +3,6 @@
 
 /**
  * @fileOverview Generates contest questions based on a specific topic.
- *
- * - generateQuestionsFromTopic - A function that generates contest questions.
- * - GenerateQuestionsFromTopicInput - The input type for the generateQuestionsFromTopic function.
- * - GenerateQuestionsFromTopicOutput - The return type for the generateQuestionsFromTopic function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -43,48 +39,18 @@ export type GenerateQuestionsFromTopicOutput = z.infer<
   typeof GenerateQuestionsFromTopicOutputSchema
 >;
 
-export async function generateQuestionsFromTopic(
-  input: GenerateQuestionsFromTopicInput
-): Promise<GenerateQuestionsFromTopicOutput> {
-  return generateQuestionsFromTopicFlow(input);
-}
-
-const prompt = ai.definePrompt({
+const generateQuestionsFromTopicPrompt = ai.definePrompt({
   name: 'generateQuestionsFromTopicPrompt',
   model: 'openai/deepseek-chat',
   input: {schema: GenerateQuestionsFromTopicInputSchema},
   output: {schema: GenerateQuestionsFromTopicOutputSchema},
   prompt: `You are an expert in creating contest questions.
-
-  Generate {{numberOfQuestions}} questions about {{topic}} with {{difficulty}} difficulty.
-
-  Each question should have a question and an answer.
-
-  Format the output as a JSON object with a "questions" field that is an array of objects, where each object has a "question" and an "answer" field.
-
-  Example:
-  {
-    "questions": [
-      {
-        "question": "What is the capital of France?",
-        "answer": "Paris"
-      },
-      {
-        "question": "What is the highest mountain in the world?",
-        "answer": "Mount Everest"
-      }
-    ]
-  }`,
+  Generate {{numberOfQuestions}} questions about {{topic}} with {{difficulty}} difficulty.`,
 });
 
-const generateQuestionsFromTopicFlow = ai.defineFlow(
-  {
-    name: 'generateQuestionsFromTopicFlow',
-    inputSchema: GenerateQuestionsFromTopicInputSchema,
-    outputSchema: GenerateQuestionsFromTopicOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+export async function generateQuestionsFromTopic(
+  input: GenerateQuestionsFromTopicInput
+): Promise<GenerateQuestionsFromTopicOutput> {
+  const { output } = await generateQuestionsFromTopicPrompt(input);
+  return output!;
+}
