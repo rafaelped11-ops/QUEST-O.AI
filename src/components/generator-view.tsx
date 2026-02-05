@@ -194,22 +194,30 @@ export function GeneratorView() {
   return (
     <div className="space-y-8 pb-12">
       <Tabs defaultValue="pdf" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
-          <TabsTrigger value="pdf" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-            <BrainCircuit className="h-4 w-4" /> Questões por DeepSeek
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl h-auto">
+          <TabsTrigger value="pdf" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
+            <BrainCircuit className="h-4 w-4" /> 
+            <span className="hidden sm:inline">Questões IA</span>
+            <span className="sm:hidden">IA</span>
           </TabsTrigger>
-          <TabsTrigger value="manual" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-            <Pencil className="h-4 w-4" /> Entrada Manual
+          <TabsTrigger value="manual" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
+            <Pencil className="h-4 w-4" /> 
+            <span className="hidden sm:inline">Entrada Manual</span>
+            <span className="sm:hidden">Manual</span>
           </TabsTrigger>
-          <TabsTrigger value="discursiva" className="gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-            <Sparkles className="h-4 w-4" /> Prova Discursiva
+          <TabsTrigger value="discursiva" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
+            <Sparkles className="h-4 w-4" /> 
+            <span className="hidden sm:inline">Prova Discursiva</span>
+            <span className="sm:hidden">Discursiva</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pdf">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
             <CardHeader>
-              <CardDescription className="text-muted-foreground font-medium">Carregue seu PDF e deixe a IA DeepSeek criar um simulado exclusivo focado no seu material.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium text-center md:text-left">
+                Carregue seu PDF e deixe a IA DeepSeek criar um simulado exclusivo focado no seu material.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
@@ -218,7 +226,7 @@ export function GeneratorView() {
                     <Label htmlFor="pdf" className="text-foreground font-bold">Arquivo PDF</Label>
                     <div className="flex items-center gap-2">
                       <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20" />
-                      {file && <span className="text-xs text-accent font-black whitespace-nowrap">✓ Pronto</span>}
+                      {file && <span className="text-xs text-accent font-black whitespace-nowrap hidden md:inline">✓ Pronto</span>}
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -226,8 +234,8 @@ export function GeneratorView() {
                     <Select value={questionType} onValueChange={(v: any) => setQuestionType(v)}>
                       <SelectTrigger id="type" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">Tipo A (Certo/Errado - Cebraspe)</SelectItem>
-                        <SelectItem value="C">Tipo C (Múltipla Escolha - A a E)</SelectItem>
+                        <SelectItem value="A">Tipo A (Certo/Errado)</SelectItem>
+                        <SelectItem value="C">Tipo C (Múltipla Escolha)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -242,7 +250,7 @@ export function GeneratorView() {
                       <SelectContent>
                         <SelectItem value="easy">Iniciante</SelectItem>
                         <SelectItem value="medium">Intermediário</SelectItem>
-                        <SelectItem value="hard">Avançado (Nível Concurso)</SelectItem>
+                        <SelectItem value="hard">Avançado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -319,9 +327,9 @@ export function GeneratorView() {
 
               {essayTopics && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos pela DeepSeek</Label>
+                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha seu desafio" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha um tema" /></SelectTrigger>
                     <SelectContent>
                       {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -342,7 +350,7 @@ export function GeneratorView() {
                 <div className="space-y-4">
                   <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-bold text-foreground dark:text-white">Pontuação Máxima da Prova</Label>
+                      <Label className="font-bold text-foreground dark:text-white">Pontuação Máxima</Label>
                       <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
                     </div>
                     <Button 
@@ -351,7 +359,7 @@ export function GeneratorView() {
                       disabled={loading || !userEssay || !selectedTopic}
                     >
                       {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
-                      Submeter para Correção
+                      Corrigir Agora
                     </Button>
                   </div>
 
@@ -379,14 +387,14 @@ export function GeneratorView() {
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
-            <div>
-              <h2 className="text-2xl font-black text-primary">Resultado do Simulado</h2>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-black text-primary">Resultado</h2>
               <p className="text-muted-foreground font-medium">{results.length} questões</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-accent/20 min-w-[180px]">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-accent/20 flex-1 md:min-w-[180px]">
                 <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento</p>
-                <p className={`text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
+                <p className={`text-3xl md:text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
                   {calculateAproveitamento()}%
                 </p>
               </div>
