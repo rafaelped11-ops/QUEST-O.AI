@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Summarizes study material provided by the user.
@@ -28,6 +29,7 @@ export async function summarizeStudyMaterial(input: SummarizeStudyMaterialInput)
 
 const prompt = ai.definePrompt({
   name: 'summarizeStudyMaterialPrompt',
+  model: 'openai/deepseek-chat',
   input: {schema: SummarizeStudyMaterialInputSchema},
   output: {schema: SummarizeStudyMaterialOutputSchema},
   prompt: `You are an expert summarizer.  Summarize the following study material, extracting the key concepts:\n\n{{{studyMaterial}}}`,

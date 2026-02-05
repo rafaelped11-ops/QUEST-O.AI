@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -41,6 +42,7 @@ export async function adjustQuestionDifficulty(
 
 const adjustQuestionDifficultyPrompt = ai.definePrompt({
   name: 'adjustQuestionDifficultyPrompt',
+  model: 'openai/deepseek-chat',
   input: {schema: AdjustQuestionDifficultyInputSchema},
   output: {schema: AdjustQuestionDifficultyOutputSchema},
   prompt: `You are an expert in creating questions for competitive exams.

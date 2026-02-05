@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -50,6 +51,7 @@ export async function generateQuestionsFromTopic(
 
 const prompt = ai.definePrompt({
   name: 'generateQuestionsFromTopicPrompt',
+  model: 'openai/deepseek-chat',
   input: {schema: GenerateQuestionsFromTopicInputSchema},
   output: {schema: GenerateQuestionsFromTopicOutputSchema},
   prompt: `You are an expert in creating contest questions.
