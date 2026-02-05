@@ -194,39 +194,35 @@ export function GeneratorView() {
   return (
     <div className="space-y-8 pb-12">
       <Tabs defaultValue="pdf" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl h-auto">
-          <TabsTrigger value="pdf" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
-            <BrainCircuit className="h-4 w-4" /> 
-            <span className="hidden sm:inline">Questões IA</span>
-            <span className="sm:hidden">IA</span>
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl h-auto min-h-[56px]">
+          <TabsTrigger value="pdf" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
+            <BrainCircuit className="h-4 w-4 shrink-0" /> 
+            <span className="truncate">Simulados</span>
           </TabsTrigger>
-          <TabsTrigger value="manual" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
-            <Pencil className="h-4 w-4" /> 
-            <span className="hidden sm:inline">Entrada Manual</span>
-            <span className="sm:hidden">Manual</span>
+          <TabsTrigger value="manual" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
+            <Pencil className="h-4 w-4 shrink-0" /> 
+            <span className="truncate">Manual</span>
           </TabsTrigger>
-          <TabsTrigger value="discursiva" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-[10px] md:text-sm">
-            <Sparkles className="h-4 w-4" /> 
-            <span className="hidden sm:inline">Prova Discursiva</span>
-            <span className="sm:hidden">Discursiva</span>
+          <TabsTrigger value="discursiva" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
+            <Sparkles className="h-4 w-4 shrink-0" /> 
+            <span className="truncate">Redação</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pdf">
+        <TabsContent value="pdf" className="mt-0">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader>
-              <CardDescription className="text-muted-foreground font-medium text-center md:text-left">
+            <CardHeader className="text-center md:text-left">
+              <CardDescription className="text-muted-foreground font-medium">
                 Carregue seu PDF e deixe a IA DeepSeek criar um simulado exclusivo focado no seu material.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="pdf" className="text-foreground font-bold">Arquivo PDF</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20" />
-                      {file && <span className="text-xs text-accent font-black whitespace-nowrap hidden md:inline">✓ Pronto</span>}
+                      <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20 text-xs md:text-sm" />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -255,53 +251,53 @@ export function GeneratorView() {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-lg font-black shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground transition-all hover:scale-[1.01]" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Gerar Questões"}
+                <Button type="submit" className="w-full h-14 text-base md:text-lg font-black shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground transition-all active:scale-95" disabled={loading}>
+                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Gerar Simulado"}
                 </Button>
               </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="manual">
+        <TabsContent value="manual" className="mt-0">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader>
-              <CardTitle className="text-xl font-black text-foreground">Identificação de Questões</CardTitle>
+            <CardHeader className="text-center md:text-left">
+              <CardTitle className="text-lg md:text-xl font-black text-foreground">Identificação de Questões</CardTitle>
               <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para formatar seu treino.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea 
                 placeholder="Cole aqui o enunciado, opções e gabarito..." 
-                className="min-h-[200px] bg-background border-primary/20 text-foreground" 
+                className="min-h-[200px] bg-background border-primary/20 text-foreground text-sm" 
                 value={manualText} 
                 onChange={(e) => setManualText(e.target.value)}
               />
-              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90 shadow-md" disabled={loading || !manualText}>
+              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90 shadow-md active:scale-95" disabled={loading || !manualText}>
                 {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="discursiva">
+        <TabsContent value="discursiva" className="mt-0">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader>
-              <CardTitle className="text-xl font-black text-primary">Treino de Redação</CardTitle>
+            <CardHeader className="text-center md:text-left">
+              <CardTitle className="text-lg md:text-xl font-black text-primary">Treino de Redação</CardTitle>
               <CardDescription className="text-muted-foreground font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold dark:text-white">Base de Conhecimento (Texto)</Label>
+                  <Label className="text-foreground font-bold">Base de Conhecimento</Label>
                   <Textarea 
-                    placeholder="Cole aqui o texto base..." 
+                    placeholder="Cole aqui o texto base para gerar temas..." 
                     value={essayContent}
                     onChange={(e) => setEssayContent(e.target.value)}
-                    className="bg-background border-accent/20 h-24 text-foreground"
+                    className="bg-background border-accent/20 h-24 text-foreground text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold dark:text-white">Selecionar Documento</Label>
+                  <Label className="text-foreground font-bold">Ou carregue um PDF</Label>
                   <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 items-center">
                     <Input 
                       type="file" 
@@ -310,9 +306,9 @@ export function GeneratorView() {
                       id="essay-pdf" 
                       onChange={(e) => handleFileChange(e, setEssayFile)}
                     />
-                    <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1">
+                    <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1 w-full h-full justify-center">
                       <FileUp className="h-6 w-6 text-accent" />
-                      <span className="text-xs font-bold text-foreground dark:text-white">
+                      <span className="text-[10px] md:text-xs font-bold text-foreground truncate px-2 max-w-full">
                         {essayFile ? essayFile.name : "Selecionar Documento"}
                       </span>
                     </label>
@@ -320,14 +316,14 @@ export function GeneratorView() {
                 </div>
               </div>
 
-              <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
+              <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md active:scale-95">
                 {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
                 Sugerir Temas
               </Button>
 
               {essayTopics && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-accent font-black uppercase text-xs tracking-widest">Temas Sugeridos</Label>
+                  <Label className="text-accent font-black uppercase text-[10px] tracking-widest">Escolha um Tema</Label>
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
                     <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha um tema" /></SelectTrigger>
                     <SelectContent>
@@ -337,41 +333,43 @@ export function GeneratorView() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
                 <div className="space-y-2">
-                  <Label className="text-foreground font-bold dark:text-white">Sua Redação</Label>
+                  <Label className="text-foreground font-bold">Sua Redação</Label>
                   <Textarea 
-                    placeholder="Desenvolva seu texto..." 
-                    className="min-h-[350px] bg-background font-serif text-lg leading-relaxed border-accent/20 text-foreground" 
+                    placeholder="Desenvolva seu texto aqui..." 
+                    className="min-h-[300px] bg-background font-serif text-base md:text-lg leading-relaxed border-accent/20 text-foreground" 
                     value={userEssay}
                     onChange={(e) => setUserEssay(e.target.value)}
                   />
                 </div>
                 <div className="space-y-4">
-                  <div className="p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
+                  <div className="p-4 md:p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-bold text-foreground dark:text-white">Pontuação Máxima</Label>
-                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20 text-foreground" />
+                      <Label className="font-bold text-foreground">Pontuação Máxima</Label>
+                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20" />
                     </div>
                     <Button 
                       onClick={handleCorrectEssay} 
-                      className="w-full h-12 text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md" 
+                      className="w-full h-12 text-base md:text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md active:scale-95" 
                       disabled={loading || !userEssay || !selectedTopic}
                     >
                       {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
-                      Corrigir Agora
+                      Corrigir Redação
                     </Button>
                   </div>
 
                   {essayCorrection && (
-                    <div className="p-6 bg-muted/50 rounded-xl border-2 border-accent/20 space-y-4 animate-in fade-in zoom-in-95">
+                    <div className="p-4 md:p-6 bg-card rounded-xl border-2 border-accent/20 space-y-4 animate-in fade-in zoom-in-95">
                       <div className="flex justify-between items-center border-b border-accent/10 pb-4">
-                        <h4 className="font-black text-3xl text-accent">{essayCorrection.finalScore} <span className="text-sm font-normal text-muted-foreground">/ {maxScore}</span></h4>
-                        <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Concluída</Badge>
+                        <h4 className="font-black text-2xl md:text-3xl text-accent">
+                          {essayCorrection.finalScore} <span className="text-xs md:text-sm font-normal text-muted-foreground">/ {maxScore}</span>
+                        </h4>
+                        <Badge className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Avaliado</Badge>
                       </div>
-                      <div className="space-y-4 text-sm">
+                      <div className="space-y-4 text-xs md:text-sm">
                         <div>
-                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback Detalhado</p>
+                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback</p>
                           <p className="leading-relaxed font-medium text-foreground">{essayCorrection.feedback}</p>
                         </div>
                       </div>
@@ -386,15 +384,15 @@ export function GeneratorView() {
 
       {results && (
         <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl font-black text-primary">Resultado</h2>
-              <p className="text-muted-foreground font-medium">{results.length} questões</p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
+            <div className="text-center sm:text-left">
+              <h2 className="text-xl md:text-2xl font-black text-primary">Resultado</h2>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">{results.length} questões geradas</p>
             </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="text-center p-4 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-accent/20 flex-1 md:min-w-[180px]">
+            <div className="w-full sm:w-auto">
+              <div className="text-center p-3 md:p-4 bg-background rounded-xl shadow-xl border border-accent/20 min-w-[140px]">
                 <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento</p>
-                <p className={`text-3xl md:text-4xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
+                <p className={`text-2xl md:text-3xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
                   {calculateAproveitamento()}%
                 </p>
               </div>
