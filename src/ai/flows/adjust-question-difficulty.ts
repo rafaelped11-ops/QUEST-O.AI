@@ -1,12 +1,9 @@
-'use server';
 
-/**
- * @fileOverview Ajusta a dificuldade de questões utilizando integração direta com DeepSeek.
- */
+'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { callDeepSeek } from '@/ai/lib/deepseek';
+import { callAI } from '@/ai/lib/ai-service';
 
 const AdjustQuestionDifficultyOutputSchema = z.object({
   adjustedQuestion: z.string(),
@@ -27,7 +24,7 @@ const adjustQuestionDifficultyFlow = ai.defineFlow(
     outputSchema: AdjustQuestionDifficultyOutputSchema,
   },
   async (input) => {
-    return await callDeepSeek({
+    return await callAI({
       system: 'Você é um especialista em ajustar o nível de complexidade de questões de concurso.',
       prompt: `Ajuste a seguinte questão de nível ${input.currentDifficulty} para o nível ${input.desiredDifficulty}:\n\n${input.question}`,
       schema: AdjustQuestionDifficultyOutputSchema,

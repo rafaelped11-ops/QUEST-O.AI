@@ -1,12 +1,9 @@
-'use server';
 
-/**
- * @fileOverview Gera questões por tópico utilizando integração direta com DeepSeek.
- */
+'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { callDeepSeek } from '@/ai/lib/deepseek';
+import { callAI } from '@/ai/lib/ai-service';
 
 const GenerateQuestionsFromTopicOutputSchema = z.object({
   questions: z.array(
@@ -32,7 +29,7 @@ const generateQuestionsFromTopicFlow = ai.defineFlow(
     outputSchema: GenerateQuestionsFromTopicOutputSchema,
   },
   async (input) => {
-    return await callDeepSeek({
+    return await callAI({
       system: 'Você é um especialista em criar questões de simulado por tópico.',
       prompt: `Gere ${input.numberOfQuestions} questões sobre o tópico "${input.topic}" com dificuldade ${input.difficulty}.`,
       schema: GenerateQuestionsFromTopicOutputSchema,

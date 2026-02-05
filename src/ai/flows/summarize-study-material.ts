@@ -1,11 +1,9 @@
+
 'use server';
-/**
- * @fileOverview Sumariza materiais de estudo utilizando integração direta com DeepSeek.
- */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { callDeepSeek } from '@/ai/lib/deepseek';
+import { callAI } from '@/ai/lib/ai-service';
 
 const SummarizeStudyMaterialOutputSchema = z.object({
   summary: z.string(),
@@ -22,7 +20,7 @@ const summarizeStudyMaterialFlow = ai.defineFlow(
     outputSchema: SummarizeStudyMaterialOutputSchema,
   },
   async (input) => {
-    return await callDeepSeek({
+    return await callAI({
       system: 'Você é um especialista em resumos educacionais concisos e estruturados.',
       prompt: `Extraia os conceitos-chave e forneça um resumo estruturado do seguinte material:\n\n${input.studyMaterial}`,
       schema: SummarizeStudyMaterialOutputSchema,

@@ -1,12 +1,13 @@
+
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF utilizando integração direta com DeepSeek.
+ * @fileOverview Gera questões de concurso a partir de um documento PDF utilizando o provedor universal.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { callDeepSeek } from '@/ai/lib/deepseek';
+import { callAI } from '@/ai/lib/ai-service';
 
 const QuestionSchema = z.object({
   text: z.string(),
@@ -51,12 +52,10 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
     Sua missão é criar questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
     Varra todo o documento e forneça justificativas pedagógicas detalhadas citando a página aproximada.`;
 
-    const output = await callDeepSeek({
+    return await callAI({
       system,
       prompt,
       schema: GenerateQuestionsFromPdfOutputSchema,
     });
-
-    return output;
   }
 );

@@ -1,12 +1,9 @@
-'use server';
 
-/**
- * @fileOverview Identifica e formata questões a partir de texto bruto utilizando integração direta com DeepSeek.
- */
+'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { callDeepSeek } from '@/ai/lib/deepseek';
+import { callAI } from '@/ai/lib/ai-service';
 
 const ParseManualQuestionsOutputSchema = z.object({
   questions: z.array(
@@ -31,7 +28,7 @@ const parseManualQuestionsFlow = ai.defineFlow(
     outputSchema: ParseManualQuestionsOutputSchema,
   },
   async (input) => {
-    return await callDeepSeek({
+    return await callAI({
       system: 'Você é um assistente especializado em processamento e formatação de textos educacionais.',
       prompt: `Identifique e formate todas as questões presentes no texto bruto abaixo, determinando se são Certo/Errado (Tipo A) ou Múltipla Escolha (Tipo C):\n\n${input.rawText}`,
       schema: ParseManualQuestionsOutputSchema,
