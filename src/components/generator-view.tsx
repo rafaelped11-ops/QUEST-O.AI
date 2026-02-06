@@ -467,6 +467,34 @@ export function GeneratorView() {
                       <p className="text-xs font-black uppercase text-muted-foreground tracking-widest">Avaliação Macroestrutural</p>
                       <p className="font-medium text-foreground leading-relaxed text-sm">{essayCorrection.feedback}</p>
                     </div>
+
+                    {essayCorrection.scoresByAspect && (
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Notas por Aspecto</p>
+                        <div className="grid gap-2">
+                          {essayCorrection.scoresByAspect.map((item: any, i: number) => (
+                            <div key={i} className="p-4 bg-background rounded-xl border border-primary/10 flex items-center justify-between group hover:border-primary/30 transition-all">
+                              <div className="flex-1 min-w-0 pr-4">
+                                <p className="text-sm font-black text-primary">{item.aspect}</p>
+                                <p className="text-xs text-muted-foreground font-medium italic mt-1 leading-snug">{item.feedback}</p>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <Badge variant="outline" className="font-black text-sm px-3 py-1 border-primary/20">
+                                  {item.score} / {item.maxScore}
+                                </Badge>
+                                <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary" 
+                                    style={{ width: `${(item.score / item.maxScore) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
                         <p className="text-[10px] font-black uppercase text-green-700 mb-2">Pontos Fortes</p>

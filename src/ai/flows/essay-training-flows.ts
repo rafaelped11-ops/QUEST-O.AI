@@ -24,11 +24,13 @@ const suggestEssayTopicsFlow = ai.defineFlow(
   async (input) => {
     return await callAI({
       system: `Você é um especialista em sugerir temas de redação para concursos de alto nível, especificamente seguindo o padrão Cebraspe.
+      Toda a sua resposta deve estar obrigatoriamente em PORTUGUÊS.
       
       CRITÉRIOS CEBRASPE PARA TEMAS:
       1. Os temas devem ser atuais e vinculados ao conteúdo técnico fornecido.
       2. Devem incluir obrigatoriamente 3 aspectos específicos (tópicos 1, 2 e 3) para o candidato abordar.`,
       prompt: `Baseado no conteúdo fornecido, sugira EXATAMENTE 3 temas prováveis. 
+      Responda tudo em PORTUGUÊS.
       
       ESTRUTURA JSON OBRIGATÓRIA:
       {
@@ -53,6 +55,12 @@ const CorrectEssayOutputSchema = z.object({
   strengths: z.array(z.string()),
   weaknesses: z.array(z.string()),
   detailedAnalysis: z.string(),
+  scoresByAspect: z.array(z.object({
+    aspect: z.string(),
+    score: z.number(),
+    maxScore: z.number(),
+    feedback: z.string(),
+  })),
 });
 
 export async function correctEssay(input: { topic: string; essay: string; maxScore: number }) {
@@ -72,26 +80,32 @@ const correctEssayFlow = ai.defineFlow(
   async (input) => {
     return await callAI({
       system: `Você é um corretor especializado em bancas de concurso (como Cebraspe, FCC, FGV). 
-      Sua correção deve ser rigorosa e técnica. A pontuação máxima permitida é ${input.maxScore}.`,
-      prompt: `Avalie a seguinte redação. 
+      Sua correção deve ser rigorosa e técnica. A pontuação máxima permitida é ${input.maxScore}.
+      Responda SEMPRE em PORTUGUÊS.`,
+      prompt: `Avalie a seguinte redação e forneça notas detalhadas por aspecto abordado. 
       TEMA: "${input.topic}"
       REDAÇÃO DO CANDIDATO: 
       "${input.essay}"
 
-      REGRAS DE RESPOSTA (JSON APENAS):
-      1. "finalScore" deve ser um número entre 0 e ${input.maxScore}.
-      2. "feedback" deve ser uma STRING curta com a avaliação geral.
-      3. "strengths" deve ser um ARRAY de strings com pontos fortes.
-      4. "weaknesses" deve ser um ARRAY de strings com pontos fracos.
-      5. "detailedAnalysis" deve ser uma STRING longa com a análise detalhada.
+      REGRAS DE RESPOSTA (JSON APENAS, EM PORTUGUÊS):
+      1. "finalScore" deve ser a soma exata das notas dos aspectos.
+      2. "feedback" deve ser uma STRING com a avaliação geral (EM PORTUGUÊS).
+      3. "strengths" e "weaknesses" devem ser ARRAYS de strings (EM PORTUGUÊS).
+      4. "detailedAnalysis" deve ser uma análise técnica minuciosa (EM PORTUGUÊS).
+      5. "scoresByAspect" DEVE conter a pontuação dividida pelos 3 tópicos/aspectos principais solicitados no tema.
 
-      ESTRUTURA OBRIGATÓRIA:
+      ESTRUTURA OBRIGATÓRIA (RESPOSTA EM PORTUGUÊS):
       {
         "finalScore": ${input.maxScore / 2},
-        "feedback": "Texto da avaliação geral",
+        "feedback": "Sua avaliação macroestrutural em português...",
         "strengths": ["ponto 1", "ponto 2"],
         "weaknesses": ["melhoria 1", "melhoria 2"],
-        "detailedAnalysis": "Análise técnica completa..."
+        "detailedAnalysis": "Sua análise técnica em português...",
+        "scoresByAspect": [
+          { "aspect": "Descrição do Aspecto 1", "score": 10, "maxScore": 15, "feedback": "Comentário sobre este ponto" },
+          { "aspect": "Descrição do Aspecto 2", "score": 8, "maxScore": 15, "feedback": "Comentário sobre este ponto" },
+          { "aspect": "Descrição do Aspecto 3", "score": 12, "maxScore": 20, "feedback": "Comentário sobre este ponto" }
+        ]
       }`,
       schema: CorrectEssayOutputSchema,
     });
