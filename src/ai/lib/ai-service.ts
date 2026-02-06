@@ -22,8 +22,9 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
 
 // Lista de modelos gratuitos estáveis para fallback (usados se o modelo principal falhar)
 const FREE_MODELS = [
-  'mistralai/mistral-7b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
   'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
   'nousresearch/hermes-3-llama-3.1-8b:free',
   'qwen/qwen-2-7b-instruct:free',
   'google/gemma-2-9b-it:free',
@@ -42,11 +43,11 @@ export async function callAI<T>(params: {
     throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
-  // Modelo solicitado pelo usuário (flux.2-max)
-  const requestedModel = process.env.AI_MODEL || 'black-forest-labs/flux.2-max';
+  // Modelo solicitado pelo usuário via ENV ou fallback padrão
+  const requestedModel = process.env.AI_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free';
   
-  // Lista de tentativa: Primeiro o solicitado, depois os fallbacks gratuitos de texto
-  const modelsToTry = [requestedModel, ...FREE_MODELS];
+  // Lista de tentativa: Primeiro o solicitado, depois os fallbacks gratuitos
+  const modelsToTry = [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)];
 
   // Instruções reforçadas para saída JSON
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
@@ -57,9 +58,6 @@ export async function callAI<T>(params: {
 
   for (const model of modelsToTry) {
     try {
-      // Nota: Modelos de imagem como FLUX podem não aceitar response_format json_object
-      const isImageModel = model.includes('flux');
-      
       const response = await fetch(config.url, {
         method: 'POST',
         headers: {
@@ -74,8 +72,7 @@ export async function callAI<T>(params: {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: params.prompt },
           ],
-          // Apenas envia format se não for modelo de imagem (evita erro de API se possível)
-          ...(isImageModel ? {} : { response_format: { type: 'json_object' } }),
+          response_format: { type: 'json_object' },
           temperature: 0.5,
         }),
       });
@@ -87,7 +84,7 @@ export async function callAI<T>(params: {
           throw new Error('Saldo insuficiente no OpenRouter.');
         }
         
-        if (response.status === 404 || response.status === 400) {
+        if (response.status === 404 || response.status === 400 || response.status === 503) {
           console.warn(`Modelo ${model} indisponível ou incompatível (${response.status}). Tentando próximo da lista...`);
           continue; 
         }
