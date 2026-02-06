@@ -26,8 +26,8 @@ export async function callAI<T>(params: {
   schema: z.ZodSchema<T>;
 }): Promise<T> {
   const providerKey = 'openrouter';
-  // Alterado para um modelo free mais estável no OpenRouter
-  const model = process.env.AI_MODEL || 'google/gemma-7b-it:free';
+  // Modelo Mistral 7B Instruct Free é altamente estável no OpenRouter
+  const model = process.env.AI_MODEL || 'mistralai/mistral-7b-instruct:free';
   
   const configFactory = PROVIDERS[providerKey];
   const config = configFactory('');
@@ -64,7 +64,7 @@ export async function callAI<T>(params: {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 402) throw new Error('Saldo insuficiente no OpenRouter.');
-      if (response.status === 404) throw new Error(`Modelo não encontrado (${model}). Tente trocar o AI_MODEL no .env.`);
+      if (response.status === 404) throw new Error(`Modelo não encontrado (${model}). O modelo gratuito pode estar offline temporariamente.`);
       throw new Error(`Erro OpenRouter (${response.status}): ${errorData.error?.message || response.statusText}`);
     }
 
