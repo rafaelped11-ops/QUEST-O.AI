@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -35,9 +36,13 @@
           "type": "string",
           "description": "Unique identifier for the questionnaire."
         },
+        "name": {
+          "type": "string",
+          "description": "Custom name for the questionnaire."
+        },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Questionnaire). The user who generated this questionnaire."
+          "description": "Reference to User. The user who generated this questionnaire."
         },
         "creationDate": {
           "type": "string",
@@ -46,11 +51,11 @@
         },
         "questionType": {
           "type": "string",
-          "description": "The type of questions in the questionnaire (e.g., A - Certo/Errado, C - Multiple Choice)."
+          "description": "The type of questions in the questionnaire."
         },
-        "sourceDocumentId": {
-          "type": "string",
-          "description": "Reference to SourceDocument. (Relationship: SourceDocument 1:N Questionnaire). The document used to generate this questionnaire."
+        "score": {
+          "type": "number",
+          "description": "The user score in this questionnaire."
         }
       },
       "required": [
@@ -72,7 +77,7 @@
         },
         "questionnaireId": {
           "type": "string",
-          "description": "Reference to Questionnaire. (Relationship: Questionnaire 1:N Question). The questionnaire this question belongs to."
+          "description": "Reference to Questionnaire. The questionnaire this question belongs to."
         },
         "text": {
           "type": "string",
@@ -84,11 +89,7 @@
         },
         "justification": {
           "type": "string",
-          "description": "Justification for the correct answer, providing explanation and context."
-        },
-        "sourcePage": {
-          "type": "string",
-          "description": "Page number in the source document where the question is derived from."
+          "description": "Justification for the correct answer."
         }
       },
       "required": [
@@ -96,49 +97,7 @@
         "questionnaireId",
         "text",
         "correctAnswer",
-        "justification",
-        "sourcePage"
-      ]
-    },
-    "SourceDocument": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SourceDocument",
-      "type": "object",
-      "description": "Represents a document uploaded by the user, which is used as the source for generating questions.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the source document."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N SourceDocument). The user who uploaded the document."
-        },
-        "uploadDate": {
-          "type": "string",
-          "description": "Date and time when the document was uploaded.",
-          "format": "date-time"
-        },
-        "fileName": {
-          "type": "string",
-          "description": "The original filename of the uploaded document."
-        },
-        "fileSize": {
-          "type": "number",
-          "description": "The size of the uploaded document in bytes."
-        },
-        "fileType": {
-          "type": "string",
-          "description": "The MIME type of the uploaded document (e.g., application/pdf)."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "uploadDate",
-        "fileName",
-        "fileSize",
-        "fileType"
+        "justification"
       ]
     }
   },
@@ -149,88 +108,13 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profile information.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/sourceDocuments/{sourceDocumentId}",
-        "definition": {
-          "entityName": "SourceDocument",
-          "schema": {
-            "$ref": "#/backend/entities/SourceDocument"
-          },
-          "description": "Stores PDF documents uploaded by the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "sourceDocumentId",
-              "description": "The unique identifier of the source document."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/questionnaires/{questionnaireId}",
-        "definition": {
-          "entityName": "Questionnaire",
-          "schema": {
-            "$ref": "#/backend/entities/Questionnaire"
-          },
-          "description": "Stores questionnaires generated by the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "questionnaireId",
-              "description": "The unique identifier of the questionnaire."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/questionnaires/{questionnaireId}/questions/{questionId}",
-        "definition": {
-          "entityName": "Question",
-          "schema": {
-            "$ref": "#/backend/entities/Question"
-          },
-          "description": "Stores the generated questions for a specific questionnaire.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "questionnaireId",
-              "description": "The unique identifier of the questionnaire."
-            },
-            {
-              "name": "questionId",
-              "description": "The unique identifier of the question."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the 'Questões AÍ' application, focusing on secure question generation from uploaded PDF documents.  The structure adheres to Authorization Independence, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters) principles. User-generated content (Source Documents, Questionnaires, and Questions) are stored in hierarchical paths under the user's ID, ensuring clear ownership and simplified security rules.  Authorization Independence is achieved by path-based ownership. Because the app leverages path-based ownership, no denormalization is required. Path-based ownership also supports the required QAPs, as list operations can be easily secured by scoping to the user's path.\n\nSpecifically:\n\n*   `/users/{userId}`:  Stores user profile information.\n*   `/users/{userId}/sourceDocuments/{sourceDocumentId}`:  Stores the PDF documents uploaded by the user. The `userId` in the path ensures only the owner can access it.\n*   `/users/{userId}/questionnaires/{questionnaireId}`: Stores the questionnaires generated by the user. The `userId` in the path ensures only the owner can access it.  `sourceDocumentId` links the questionnaire to the PDF document used to generate the questions.\n*   `/users/{userId}/questionnaires/{questionnaireId}/questions/{questionId}`: Stores the generated questions for a specific questionnaire. The nested path enforces ownership through the `userId` and `questionnaireId`.\n\nThis structure ensures that all documents within a collection share the same security requirements, simplifying security rules and improving maintainability.  There are no collections that store entities with different security postures."
+    "/users/{userId}": {
+      "schema": { "$ref": "#/backend/entities/User" },
+      "description": "User profile data."
+    },
+    "/users/{userId}/questionnaires/{questionnaireId}": {
+      "schema": { "$ref": "#/backend/entities/Questionnaire" },
+      "description": "User study history."
+    }
   }
 }

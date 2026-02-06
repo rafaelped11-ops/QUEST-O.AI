@@ -1,39 +1,44 @@
 
 "use client";
 
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, Moon, Sun, History, BookOpen } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, History, BookOpen, Trash2, Edit2, Save as SaveIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { AuthModal } from "./auth-modal";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { collection, doc, deleteDoc, updateDoc, query, orderBy } from "firebase/firestore";
 import Link from "next/link";
 
 export function Header() {
   const { user } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
   const { toast } = useToast();
+  
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [history, setHistory] = useState<any[]>([]);
+  const [localHistory, setLocalHistory] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+
+  // Cloud History
+  const historyQuery = useMemoFirebase(() => {
+    if (!user || !db) return null;
+    return query(collection(db, "users", user.uid, "questionnaires"), orderBy("createdAt", "desc"));
+  }, [user, db]);
+  
+  const { data: cloudHistory, isLoading: isCloudLoading } = useCollection(historyQuery);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
-    const initialTheme = savedTheme || "light";
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-    
-    const savedHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
-    setHistory(savedHistory);
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" || "light";
+    setTheme(savedTheme);
+    document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    setLocalHistory(JSON.parse(localStorage.getItem("study_history") || "[]"));
   }, []);
 
   const toggleTheme = () => {
@@ -43,74 +48,44 @@ export function Header() {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
-  const handleLogout = () => {
-    signOut(auth);
-    toast({ title: "Até logo!", description: "Você saiu da sua conta." });
+  const handleDelete = async (id: string) => {
+    if (user && db) {
+      await deleteDoc(doc(db, "users", user.uid, "questionnaires", id));
+    }
+    const updated = localHistory.filter(h => h.id !== id);
+    setLocalHistory(updated);
+    localStorage.setItem("study_history", JSON.stringify(updated));
+    toast({ title: "Removido do histórico" });
   };
 
-  const clearHistory = () => {
-    localStorage.removeItem("study_history");
-    setHistory([]);
-    toast({ title: "Histórico Limpo" });
+  const handleRename = async (id: string) => {
+    if (!newName.trim()) return;
+    if (user && db) {
+      await updateDoc(doc(db, "users", user.uid, "questionnaires", id), { name: newName });
+    }
+    const updated = localHistory.map(h => h.id === id ? { ...h, name: newName } : h);
+    setLocalHistory(updated);
+    localStorage.setItem("study_history", JSON.stringify(updated));
+    setEditingId(null);
+    setNewName("");
+    toast({ title: "Nome atualizado!" });
   };
+
+  const itemsToShow = user ? (cloudHistory || []) : localHistory;
 
   return (
     <header className="relative z-50 w-full border-b bg-background/80 backdrop-blur-md border-accent/20 h-16">
       <div className="container mx-auto flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center gap-2 font-black text-xl text-primary tracking-tighter">
             <BookOpen className="h-6 w-6 text-accent" />
-            <span>Questões <span className="text-accent text-2xl">AÍ</span></span>
+            <span>Questões <span className="text-accent">AÍ</span></span>
           </Link>
           
-          <Sheet onOpenChange={(open) => {
-            if (open) {
-              setHistory(JSON.parse(localStorage.getItem("study_history") || "[]"));
-            }
-          }}>
-            <SheetTrigger asChild>
-              <Button size="sm" className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md transition-all">
-                <History className="h-4 w-4" />
-                <span className="hidden lg:inline text-xs uppercase tracking-wider">Meus Questionários</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-foreground">
-                  <History className="h-5 w-5 text-accent" />
-                  Meus Questionários
-                </SheetTitle>
-                <SheetDescription>
-                  Seu histórico recente de estudos realizados neste navegador.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-8 space-y-4">
-                {history.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                    <p>Nenhum questionário encontrado.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="divide-y max-h-[60vh] overflow-y-auto pr-2">
-                      {history.map((item) => (
-                        <div key={item.id} className="py-4 space-y-1 hover:bg-muted/50 transition-colors px-2 rounded-lg cursor-pointer">
-                          <p className="font-bold text-sm truncate text-foreground">{item.fileName}</p>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="bg-accent/10 px-2 py-0.5 rounded text-accent-foreground font-bold text-[10px]">{item.type}</span>
-                            <span>{item.count} itens • {new Date(item.date).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/5" onClick={clearHistory}>
-                      Limpar Histórico
-                    </Button>
-                  </>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+          <Button onClick={() => setIsHistoryOpen(true)} size="sm" className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md">
+            <History className="h-4 w-4" />
+            <span className="hidden lg:inline text-xs uppercase tracking-wider">Meus Questionários</span>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -119,7 +94,7 @@ export function Header() {
           </Button>
 
           {user ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-accent/20 font-bold hover:bg-accent/5 text-foreground">
+            <Button variant="outline" size="sm" onClick={() => signOut(auth)} className="gap-2 border-accent/20 font-bold hover:bg-accent/5">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sair</span>
             </Button>
@@ -131,6 +106,72 @@ export function Header() {
           )}
         </div>
       </div>
+
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+              <History className="h-6 w-6 text-accent" /> Meus Estudos
+            </DialogTitle>
+            <DialogDescription className="font-medium">
+              Gerencie seus simulados e questionários {user ? "salvos na nuvem" : "salvos neste navegador"}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6 space-y-4">
+            {itemsToShow.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-2xl">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p className="font-bold">Nenhum questionário encontrado.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {itemsToShow.map((item) => (
+                  <div key={item.id} className="p-4 border-2 rounded-2xl bg-card hover:border-primary/30 transition-all group">
+                    {editingId === item.id ? (
+                      <div className="flex gap-2">
+                        <Input 
+                          value={newName} 
+                          onChange={(e) => setNewName(e.target.value)}
+                          className="font-bold h-10"
+                          placeholder="Novo nome..."
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={() => handleRename(item.id)} className="bg-green-500 hover:bg-green-600">
+                          <SaveIcon className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1 flex-1 min-w-0 pr-4">
+                          <h4 className="font-black text-foreground truncate">{item.name || item.fileName || "Sem Nome"}</h4>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground font-bold">
+                            <span className="bg-accent/10 px-2 py-0.5 rounded text-accent-foreground">{item.count} itens</span>
+                            <span>Aprov: {item.score}%</span>
+                            <span>{new Date(item.date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditingId(item.id); setNewName(item.name || item.fileName || ""); }}>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </header>
   );
