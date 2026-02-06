@@ -256,12 +256,13 @@ export function GeneratorView() {
 
         <div className="animate-in slide-in-from-right-4 duration-300">
           <QuestionCard 
+            key={currentIdx}
             index={currentIdx + 1} 
             question={currentQuestion.text} 
             options={currentQuestion.options}
             correctAnswer={currentQuestion.correctAnswer}
             justification={currentQuestion.justification}
-            sourcePage={currentQuestion.sourcePage || 0}
+            sourcePage={currentQuestion.sourcePage || 1}
             type={currentQuestion.type || questionType}
             pdfUrl={pdfUrl}
             onAnswered={(isCorrect, selected) => {

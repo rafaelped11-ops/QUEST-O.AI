@@ -1,8 +1,7 @@
-
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF.
+ * @fileOverview Gera questões de concurso a partir de um documento PDF com páginas dinâmicas.
  */
 
 import { ai } from '@/ai/genkit';
@@ -54,18 +53,31 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
       `;
     }
 
-    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty}.
+    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto fornecido.
     
-    ${specificInstructions}
+    INSTRUÇÕES IMPORTANTES:
+    1. ${specificInstructions}
+    2. "sourcePage": Estime a página original de onde a informação foi extraída (tente variar as páginas entre 1 e 20 baseado no volume de texto).
+    3. Retorne obrigatoriamente um objeto JSON com a chave plural "questions".
 
-    IMPORTANTE: Retorne obrigatoriamente um objeto JSON com a chave plural "questions".
-    ESTRUTURA: { "questions": [ { "text": "...", "options": [...], "correctAnswer": "...", "justification": "...", "sourcePage": 1 } ] }
+    ESTRUTURA EXEMPLO (NÃO COPIE OS VALORES): 
+    { 
+      "questions": [ 
+        { 
+          "text": "...", 
+          "options": [...], 
+          "correctAnswer": "...", 
+          "justification": "...", 
+          "sourcePage": 12 
+        } 
+      ] 
+    }
     
-    TEXTO:
+    TEXTO BASE:
     ${input.pdfText}`;
 
     return await callAI({
-      system: `Você é um examinador de concursos. Retorne sempre o JSON usando a chave "questions" no plural.`,
+      system: `Você é um examinador de concursos experiente. Gere questões técnicas e doutrinárias.`,
       prompt,
       schema: GenerateQuestionsFromPdfOutputSchema,
     });
