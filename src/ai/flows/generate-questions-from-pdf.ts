@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -41,45 +42,30 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
     let specificInstructions = "";
     if (isTypeA) {
       specificInstructions = `
-        TIPO DE QUESTÃO: Certo ou Errado (Estilo Cebraspe).
-        - O campo "options" DEVE ser omitido ou uma lista vazia [].
-        - O campo "correctAnswer" DEVE ser obrigatoriamente apenas a letra "C" (para Certo) ou "E" (para Errado).
-        - Cada item deve ser uma afirmação para o aluno julgar.
+        TIPO: Certo ou Errado.
+        - "correctAnswer" DEVE ser "C" ou "E".
+        - O campo "options" deve ser vazio [].
       `;
     } else {
       specificInstructions = `
-        TIPO DE QUESTÃO: Múltipla Escolha (Estilo convencional).
-        - O campo "options" DEVE conter exatamente 5 strings, representando as alternativas A, B, C, D e E.
-        - O campo "correctAnswer" DEVE ser a letra da alternativa correta ("A", "B", "C", "D" ou "E").
+        TIPO: Múltipla Escolha.
+        - "options" deve ter 5 alternativas.
+        - "correctAnswer" deve ser "A", "B", "C", "D" ou "E".
       `;
     }
 
-    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas rigorosamente no texto fornecido abaixo.
+    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty}.
     
     ${specificInstructions}
 
-    ESTRUTURA JSON OBRIGATÓRIA:
-    {
-      "questions": [
-        {
-          "text": "O enunciado da questão ou afirmação para julgamento",
-          "options": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"], 
-          "correctAnswer": "C/E ou A/B/C/D/E",
-          "justification": "Explicação detalhada baseada no texto",
-          "sourcePage": 1
-        }
-      ]
-    }
+    IMPORTANTE: Retorne obrigatoriamente um objeto JSON com a chave plural "questions".
+    ESTRUTURA: { "questions": [ { "text": "...", "options": [...], "correctAnswer": "...", "justification": "...", "sourcePage": 1 } ] }
     
-    TEXTO DE REFERÊNCIA:
+    TEXTO:
     ${input.pdfText}`;
 
-    const system = `Você é um examinador de bancas de concursos públicos de alto nível. 
-    Sua tarefa é criar questões inéditas, desafiadoras e tecnicamente precisas.
-    Siga estritamente o formato solicitado.`;
-
     return await callAI({
-      system,
+      system: `Você é um examinador de concursos. Retorne sempre o JSON usando a chave "questions" no plural.`,
       prompt,
       schema: GenerateQuestionsFromPdfOutputSchema,
     });

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -207,7 +208,7 @@ export function GeneratorView() {
               </div>
 
               <div className="mt-12 space-y-4">
-                <h4 className="font-black flex items-center gap-2"><ListChecks className="h-5 w-5" /> Detalhamento por Questão</h4>
+                <h4 className="font-black flex items-center gap-2"><ListChecks className="h-5 w-5" /> Resumo de Respostas</h4>
                 <div className="divide-y border rounded-xl overflow-hidden bg-background">
                   {results.map((q, idx) => (
                     <div key={idx} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
@@ -227,7 +228,7 @@ export function GeneratorView() {
             </CardContent>
             <CardContent className="flex flex-col sm:flex-row gap-4 justify-center pb-8 border-t pt-8 bg-muted/10">
               <Button onClick={() => setIsQuizMode(false)} variant="outline" className="gap-2 font-black h-12">
-                <RefreshCcw className="h-4 w-4" /> Novo Simulado
+                <RefreshCcw className="h-4 w-4" /> Novo Questionário
               </Button>
               <Button onClick={saveToHistory} disabled={hasSaved} className="gap-2 font-black h-12 bg-accent text-accent-foreground">
                 <Save className="h-4 w-4" /> {hasSaved ? "Salvo" : "Salvar no Histórico"}
@@ -314,7 +315,7 @@ export function GeneratorView() {
         <TabsContent value="pdf">
           <Card className="border-none shadow-xl bg-card ring-1 ring-primary/10">
             <CardHeader>
-              <CardTitle className="text-xl font-black">Simulador Inteligente</CardTitle>
+              <CardTitle className="text-xl font-black">Questões por IA</CardTitle>
               <CardDescription className="font-medium">Carregue seu PDF e a IA criará questões inéditas focadas no seu conteúdo.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -403,7 +404,7 @@ export function GeneratorView() {
                   variant="outline" 
                   className="w-full h-12 border-primary/30 text-primary font-black hover:bg-primary/5"
                 >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Sugerir Temas Estilo Cebraspe
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Sugerir Temas
                 </Button>
                 
                 {essayTopics.length > 0 && (

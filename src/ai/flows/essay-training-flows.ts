@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -20,13 +21,18 @@ const suggestEssayTopicsFlow = ai.defineFlow(
   },
   async (input) => {
     return await callAI({
-      system: `Você é um especialista em sugerir temas de redação para concursos de alto nível, especificamente seguindo o padrão Cebraspe (Centro Brasileiro de Pesquisa em Avaliação e Seleção e de Promoção de Eventos).
+      system: `Você é um especialista em sugerir temas de redação para concursos de alto nível, especificamente seguindo o padrão Cebraspe.
       
       CRITÉRIOS CEBRASPE PARA TEMAS:
       1. Os temas devem ser atuais e vinculados ao conteúdo técnico fornecido.
-      2. Devem ser estruturados como uma proposta de redação discursiva.
-      3. Devem incluir aspectos específicos para o candidato abordar (tópicos 1, 2 e 3).`,
-      prompt: `Baseado no conteúdo técnico extraído do PDF abaixo, sugira EXATAMENTE 3 temas prováveis para uma prova discursiva desafiadora. Cada tema deve ser uma frase curta e impactante que represente o assunto principal:\n\n${input.content}`,
+      2. Devem incluir aspectos específicos para o candidato abordar (tópicos 1, 2 e 3).`,
+      prompt: `Baseado no conteúdo abaixo, sugira EXATAMENTE 3 temas prováveis. 
+      
+      IMPORTANTE: Retorne obrigatoriamente um objeto JSON com a chave "topics" contendo uma lista de 3 strings.
+      Exemplo: { "topics": ["Tema 1", "Tema 2", "Tema 3"] }
+
+      CONTEÚDO:
+      ${input.content}`,
       schema: SuggestTopicsOutputSchema,
     });
   }
@@ -56,20 +62,10 @@ const correctEssayFlow = ai.defineFlow(
   },
   async (input) => {
     return await callAI({
-      system: `Você é um corretor especializado em bancas de concurso de alto nível, como Cebraspe, FCC e FGV.
-      A pontuação máxima para esta prova é ${input.maxScore}.
-      
-      CRITÉRIOS DE AVALIAÇÃO:
-      - Apresentação e legibilidade.
-      - Aspectos macroestruturais (desenvolvimento do tema, coerência e coesão).
-      - Aspectos microestruturais (gramática, pontuação, ortografia e concordância).
-      - Rigor técnico em relação ao tema proposto.`,
-      prompt: `Avalie a seguinte redação.
-      TEMA PROPOSTO: "${input.topic}"
-      PONTUAÇÃO MÁXIMA: ${input.maxScore}
-      
-      TEXTO DO CANDIDATO:
-      ${input.essay}`,
+      system: `Você é um corretor especializado em bancas de concurso. A pontuação máxima é ${input.maxScore}.`,
+      prompt: `Avalie a seguinte redação. 
+      TEMA: "${input.topic}"
+      REDAÇÃO: ${input.essay}`,
       schema: CorrectEssayOutputSchema,
     });
   }
