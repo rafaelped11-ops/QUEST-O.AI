@@ -20,10 +20,10 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
   }),
 };
 
-// Lista de modelos gratuitos estáveis para fallback
+// Lista de modelos gratuitos estáveis para fallback (usados se o modelo principal falhar)
 const FREE_MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',
   'mistralai/mistral-7b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
   'nousresearch/hermes-3-llama-3.1-8b:free',
   'qwen/qwen-2-7b-instruct:free',
   'google/gemma-2-9b-it:free',
@@ -42,9 +42,11 @@ export async function callAI<T>(params: {
     throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
-  // Prepara a lista de modelos (prioriza o do ENV, se houver)
-  const envModel = process.env.AI_MODEL;
-  const modelsToTry = envModel ? [envModel, ...FREE_MODELS] : FREE_MODELS;
+  // Modelo solicitado pelo usuário (flux.2-max)
+  const requestedModel = process.env.AI_MODEL || 'black-forest-labs/flux.2-max';
+  
+  // Lista de tentativa: Primeiro o solicitado, depois os fallbacks gratuitos de texto
+  const modelsToTry = [requestedModel, ...FREE_MODELS];
 
   // Instruções reforçadas para saída JSON
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
@@ -53,9 +55,11 @@ export async function callAI<T>(params: {
 
   let lastError: any = null;
 
-  // Loop de Fallback
   for (const model of modelsToTry) {
     try {
+      // Nota: Modelos de imagem como FLUX podem não aceitar response_format json_object
+      const isImageModel = model.includes('flux');
+      
       const response = await fetch(config.url, {
         method: 'POST',
         headers: {
@@ -70,7 +74,8 @@ export async function callAI<T>(params: {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: params.prompt },
           ],
-          response_format: { type: 'json_object' },
+          // Apenas envia format se não for modelo de imagem (evita erro de API se possível)
+          ...(isImageModel ? {} : { response_format: { type: 'json_object' } }),
           temperature: 0.5,
         }),
       });
@@ -78,14 +83,12 @@ export async function callAI<T>(params: {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
-        // Se for erro de saldo (402), para o loop imediatamente
         if (response.status === 402) {
           throw new Error('Saldo insuficiente no OpenRouter.');
         }
         
-        // Se for 404 (Modelo não encontrado/offline), tenta o próximo modelo
-        if (response.status === 404) {
-          console.warn(`Modelo ${model} indisponível (404). Tentando próximo da lista...`);
+        if (response.status === 404 || response.status === 400) {
+          console.warn(`Modelo ${model} indisponível ou incompatível (${response.status}). Tentando próximo da lista...`);
           continue; 
         }
 
@@ -98,22 +101,17 @@ export async function callAI<T>(params: {
       if (!content) throw new Error('A IA retornou uma resposta vazia.');
 
       const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      // Se chegamos aqui, deu certo. Retorna o resultado.
       return params.schema.parse(JSON.parse(cleanContent));
 
     } catch (error: any) {
-      // Se for erro de saldo ou parsing de esquema (erros fatais), interrompe
       if (error.message.includes('Saldo') || error instanceof z.ZodError) {
         throw error;
       }
       
       lastError = error;
       console.error(`Falha ao tentar modelo ${model}:`, error.message);
-      // Continua para o próximo modelo do loop
     }
   }
 
-  // Se o loop terminar sem sucesso
   throw new Error(`Todos os modelos de IA falharam. Último erro: ${lastError?.message}`);
 }
