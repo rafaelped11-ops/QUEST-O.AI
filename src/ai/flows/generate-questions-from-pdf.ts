@@ -13,7 +13,7 @@ const QuestionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
   justification: z.string(),
-  sourcePage: z.number(),
+  sourcePage: z.coerce.number().default(1),
 });
 
 const GenerateQuestionsFromPdfOutputSchema = z.object({
@@ -42,42 +42,30 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
     if (isTypeA) {
       specificInstructions = `
         TIPO: Certo ou Errado.
-        - "correctAnswer" DEVE ser "C" ou "E".
-        - O campo "options" deve ser vazio [].
+        - O campo "correctAnswer" DEVE ser APENAS "C" ou "E".
+        - O campo "options" deve ser uma lista vazia [].
       `;
     } else {
       specificInstructions = `
         TIPO: Múltipla Escolha.
-        - "options" deve ter 5 alternativas.
-        - "correctAnswer" deve ser "A", "B", "C", "D" ou "E".
+        - O campo "options" deve conter EXATAMENTE 5 alternativas (texto).
+        - O campo "correctAnswer" deve ser a LETRA da resposta correta: "A", "B", "C", "D" ou "E".
       `;
     }
 
-    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto fornecido.
+    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto fornecido abaixo.
     
-    INSTRUÇÕES IMPORTANTES:
+    INSTRUÇÕES DE FORMATO:
     1. ${specificInstructions}
-    2. "sourcePage": Estime a página original de onde a informação foi extraída (tente variar as páginas entre 1 e 20 baseado no volume de texto).
-    3. Retorne obrigatoriamente um objeto JSON com a chave plural "questions".
+    2. "sourcePage": Identifique a página aproximada onde a informação se encontra no texto original.
+    3. Responda APENAS com o JSON no formato: { "questions": [...] }
 
-    ESTRUTURA EXEMPLO (NÃO COPIE OS VALORES): 
-    { 
-      "questions": [ 
-        { 
-          "text": "...", 
-          "options": [...], 
-          "correctAnswer": "...", 
-          "justification": "...", 
-          "sourcePage": 12 
-        } 
-      ] 
-    }
-    
-    TEXTO BASE:
-    ${input.pdfText}`;
+    TEXTO PARA ANÁLISE:
+    ${input.pdfText.substring(0, 15000)} // Limite para evitar estouro de tokens
+    `;
 
     return await callAI({
-      system: `Você é um examinador de concursos experiente. Gere questões técnicas e doutrinárias.`,
+      system: `Você é um examinador de concursos experiente. Gere questões técnicas e doutrinárias com base no material fornecido.`,
       prompt,
       schema: GenerateQuestionsFromPdfOutputSchema,
     });

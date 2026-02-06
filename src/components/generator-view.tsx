@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -87,13 +87,17 @@ export function GeneratorView() {
         difficulty,
       });
       
-      setResults(response.questions);
-      setAnswers({});
-      setCurrentIdx(0);
-      setIsQuizMode(true);
-      setIsFinished(false);
-      setHasSaved(false);
-      toast({ title: "Simulado Gerado!" });
+      if (response && response.questions && response.questions.length > 0) {
+        setResults(response.questions);
+        setAnswers({});
+        setCurrentIdx(0);
+        setIsQuizMode(true);
+        setIsFinished(false);
+        setHasSaved(false);
+        toast({ title: "Simulado Gerado!" });
+      } else {
+        throw new Error("A IA não retornou questões válidas para este conteúdo.");
+      }
     } catch (error: any) {
       toast({ title: "Erro na Geração", description: error.message, variant: "destructive" });
     } finally {
@@ -103,7 +107,7 @@ export function GeneratorView() {
 
   const handleSuggestEssay = async () => {
     if (!file) {
-       toast({ title: "PDF Necessário", description: "Carregue um PDF para que a IA possa analisar o conteúdo técnico.", variant: "destructive" });
+       toast({ title: "PDF Necessário", description: "Carregue um PDF para análise técnica.", variant: "destructive" });
        return;
     }
     setLoading(true);
@@ -213,7 +217,7 @@ export function GeneratorView() {
                       <div className="flex items-center gap-4">
                         <Badge variant="outline" className="font-black">#{idx + 1}</Badge>
                         <span className="text-sm font-bold text-foreground truncate max-w-[200px] md:max-w-md">
-                          Marcou: <span className="text-primary">{answers[idx]?.selected === 'C' ? 'CERTO' : answers[idx]?.selected === 'E' ? 'ERRADO' : answers[idx]?.selected}</span>
+                          Marcou: <span className="text-primary">{answers[idx]?.selected === 'C' ? 'CERTO' : answers[idx]?.selected === 'E' ? 'ERRADO' : answers[idx]?.selected || 'N/A'}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -256,7 +260,7 @@ export function GeneratorView() {
 
         <div className="animate-in slide-in-from-right-4 duration-300">
           <QuestionCard 
-            key={currentIdx}
+            key={currentIdx} // Importante para resetar o estado do card entre questões
             index={currentIdx + 1} 
             question={currentQuestion.text} 
             options={currentQuestion.options}
@@ -371,9 +375,11 @@ export function GeneratorView() {
                 setLoading(true);
                 parseManualQuestions({ rawText: manualText })
                   .then(res => {
-                    setResults(res.questions);
-                    setCurrentIdx(0);
-                    setIsQuizMode(true);
+                    if (res && res.questions) {
+                      setResults(res.questions);
+                      setCurrentIdx(0);
+                      setIsQuizMode(true);
+                    }
                   })
                   .finally(() => setLoading(false));
               }} className="w-full h-12 font-black bg-accent text-accent-foreground" disabled={loading || !manualText}>
@@ -384,6 +390,7 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="discursiva">
+          {/* Módulo de Redação */}
           <Card className="border-none shadow-xl bg-card ring-1 ring-primary/10">
             <CardHeader>
               <CardTitle className="text-xl font-black">Módulo de Redação (Discursivas)</CardTitle>
@@ -393,7 +400,6 @@ export function GeneratorView() {
               <div className="space-y-4 p-6 bg-muted/20 rounded-2xl border-2 border-dashed border-primary/20">
                 <Label className="font-black flex items-center gap-2"><FileText className="h-4 w-4" /> 1. Documento Base para Temas</Label>
                 <Input type="file" accept=".pdf" onChange={handleFileChange} className="bg-background border-primary/20" />
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">A IA usará este texto para propor temas técnicos da sua área.</p>
               </div>
 
               <div className="space-y-4">
@@ -416,7 +422,7 @@ export function GeneratorView() {
                       >
                         <h4 className="font-black text-primary mb-3">{topic.title}</h4>
                         <div className="space-y-2">
-                           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">Tópicos Obrigatórios de Abordagem:</p>
+                           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">Tópicos Obrigatórios:</p>
                            <ul className="text-xs space-y-1 font-medium text-foreground/80 list-disc list-inside">
                              {topic.aspects.map((aspect: string, idx: number) => <li key={idx}>{aspect}</li>)}
                            </ul>
@@ -443,13 +449,13 @@ export function GeneratorView() {
                   </div>
                   
                   <Textarea 
-                    placeholder="Escreva sua redação aqui, abordando todos os tópicos listados acima..." 
-                    className="min-h-[400px] font-medium leading-relaxed bg-background/50 focus:bg-background transition-all"
+                    placeholder="Escreva sua redação aqui..." 
+                    className="min-h-[400px] font-medium leading-relaxed"
                     value={essayText}
                     onChange={(e) => setEssayText(e.target.value)}
                   />
                   
-                  <Button onClick={handleCorrectEssay} disabled={loading || !essayText} className="w-full h-14 bg-accent text-accent-foreground font-black text-lg shadow-lg hover:bg-accent/90">
+                  <Button onClick={handleCorrectEssay} disabled={loading || !essayText} className="w-full h-14 bg-accent text-accent-foreground font-black text-lg shadow-lg">
                      {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Corrigir Texto Agora"}
                   </Button>
                 </div>
@@ -474,22 +480,14 @@ export function GeneratorView() {
                         <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Notas por Aspecto</p>
                         <div className="grid gap-2">
                           {essayCorrection.scoresByAspect.map((item: any, i: number) => (
-                            <div key={i} className="p-4 bg-background rounded-xl border border-primary/10 flex items-center justify-between group hover:border-primary/30 transition-all">
-                              <div className="flex-1 min-w-0 pr-4">
+                            <div key={i} className="p-4 bg-background rounded-xl border border-primary/10 flex items-center justify-between">
+                              <div className="flex-1 pr-4">
                                 <p className="text-sm font-black text-primary">{item.aspect}</p>
-                                <p className="text-xs text-muted-foreground font-medium italic mt-1 leading-snug">{item.feedback}</p>
+                                <p className="text-xs text-muted-foreground italic mt-1">{item.feedback}</p>
                               </div>
-                              <div className="flex flex-col items-end gap-1">
-                                <Badge variant="outline" className="font-black text-sm px-3 py-1 border-primary/20">
-                                  {item.score} / {item.maxScore}
-                                </Badge>
-                                <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-primary" 
-                                    style={{ width: `${(item.score / item.maxScore) * 100}%` }}
-                                  />
-                                </div>
-                              </div>
+                              <Badge variant="outline" className="font-black text-sm px-3 py-1">
+                                {item.score} / {item.maxScore}
+                              </Badge>
                             </div>
                           ))}
                         </div>
@@ -500,19 +498,15 @@ export function GeneratorView() {
                       <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
                         <p className="text-[10px] font-black uppercase text-green-700 mb-2">Pontos Fortes</p>
                         <ul className="text-xs space-y-1 font-bold text-green-900">
-                          {essayCorrection.strengths.map((s: string, i: number) => <li key={i}>✓ {s}</li>)}
+                          {essayCorrection.strengths?.map((s: string, i: number) => <li key={i}>✓ {s}</li>)}
                         </ul>
                       </div>
                       <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20">
                         <p className="text-[10px] font-black uppercase text-destructive mb-2">Pontos a Melhorar</p>
                         <ul className="text-xs space-y-1 font-bold text-destructive">
-                          {essayCorrection.weaknesses.map((w: string, i: number) => <li key={i}>⚠ {w}</li>)}
+                          {essayCorrection.weaknesses?.map((w: string, i: number) => <li key={i}>⚠ {w}</li>)}
                         </ul>
                       </div>
-                    </div>
-                    <div className="p-6 bg-background rounded-xl border shadow-sm">
-                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Análise Detalhada (Microestruturas)</p>
-                       <p className="text-xs font-medium whitespace-pre-wrap leading-relaxed opacity-80">{essayCorrection.detailedAnalysis}</p>
                     </div>
                   </CardContent>
                 </Card>

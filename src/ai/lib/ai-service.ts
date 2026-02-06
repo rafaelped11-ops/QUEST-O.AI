@@ -19,14 +19,13 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
   }),
 };
 
-// Lista de modelos gratuitos estáveis para fallback
+// Lista de modelos gratuitos estáveis para fallback, reordenada por confiabilidade em JSON
 const FREE_MODELS = [
-  'nvidia/nemotron-3-nano-30b-a3b:free',
   'meta-llama/llama-3.1-8b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
   'mistralai/mistral-7b-instruct:free',
-  'nousresearch/hermes-3-llama-3.1-8b:free',
-  'qwen/qwen-2-7b-instruct:free',
   'google/gemma-2-9b-it:free',
+  'qwen/qwen-2-7b-instruct:free',
 ];
 
 export async function callAI<T>(params: {
@@ -42,14 +41,14 @@ export async function callAI<T>(params: {
     throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
-  const requestedModel = process.env.AI_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free';
+  const requestedModel = process.env.AI_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)];
 
   // Instruções reforçadas para saída JSON limpa
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
   IMPORTANTE: Responda EXCLUSIVAMENTE com um objeto JSON válido. 
-  Não inclua textos explicativos, preâmbulos, comentários ou blocos de código Markdown (\`\`\`json).
-  Certifique-se de que todos os campos obrigatórios do esquema solicitado estejam presentes e com os tipos corretos.`;
+  Não inclua textos explicativos, preâmbulos, comentários ou blocos de código Markdown.
+  A saída deve começar com { e terminar com }.`;
 
   let lastError: any = null;
 
@@ -70,14 +69,12 @@ export async function callAI<T>(params: {
             { role: 'user', content: params.prompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.3, // Menor temperatura para maior consistência no JSON
+          temperature: 0.2, // Menor temperatura para maior consistência
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 402) throw new Error('Saldo insuficiente no OpenRouter.');
-        console.warn(`Modelo ${model} indisponível (${response.status}). Tentando próximo...`);
+        console.warn(`Modelo ${model} indisponível (${response.status}).`);
         continue; 
       }
 
@@ -86,25 +83,30 @@ export async function callAI<T>(params: {
 
       if (!content) continue;
 
-      // Limpeza agressiva para garantir que apenas o JSON seja processado
-      const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      // Limpeza robusta do conteúdo
+      let cleanContent = content.trim();
+      
+      // Remove blocos de código markdown se existirem
+      if (cleanContent.includes('```')) {
+        const matches = cleanContent.match(/```(?:json)?([\s\S]*?)```/);
+        if (matches && matches[1]) {
+          cleanContent = matches[1].trim();
+        } else {
+          cleanContent = cleanContent.replace(/```json/g, '').replace(/```/g, '').trim();
+        }
+      }
       
       try {
         const jsonData = JSON.parse(cleanContent);
-        // Validação final com o esquema fornecido
         return params.schema.parse(jsonData);
       } catch (parseError) {
-        console.warn(`Falha no parse/validação do JSON com modelo ${model}. Tentando próximo...`);
+        console.warn(`Falha no parse do modelo ${model}. Tentando próximo...`);
         continue;
       }
 
     } catch (error: any) {
       lastError = error;
-      if (error instanceof z.ZodError) {
-        console.error(`Erro de validação com modelo ${model}:`, JSON.stringify(error.errors, null, 2));
-      } else {
-        console.error(`Falha ao tentar modelo ${model}:`, error.message);
-      }
+      console.error(`Falha ao tentar modelo ${model}:`, error.message);
     }
   }
 
