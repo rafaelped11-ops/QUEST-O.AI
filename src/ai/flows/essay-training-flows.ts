@@ -88,23 +88,23 @@ const correctEssayFlow = ai.defineFlow(
       "${input.essay}"
 
       REGRAS DE RESPOSTA (JSON APENAS, EM PORTUGUÊS):
-      1. "finalScore" deve ser a soma exata das notas dos aspectos.
-      2. "feedback" deve ser uma STRING com a avaliação geral (EM PORTUGUÊS).
-      3. "strengths" e "weaknesses" devem ser ARRAYS de strings (EM PORTUGUÊS).
-      4. "detailedAnalysis" deve ser uma análise técnica minuciosa (EM PORTUGUÊS).
+      1. "finalScore" deve ser um NÚMERO (soma das notas).
+      2. "feedback" deve ser uma STRING com a avaliação geral.
+      3. "strengths" e "weaknesses" devem ser ARRAYS de strings.
+      4. "detailedAnalysis" deve ser uma análise técnica minuciosa.
       5. "scoresByAspect" DEVE conter a pontuação dividida pelos 3 tópicos/aspectos principais solicitados no tema.
 
       ESTRUTURA OBRIGATÓRIA (RESPOSTA EM PORTUGUÊS):
       {
-        "finalScore": ${input.maxScore / 2},
-        "feedback": "Sua avaliação macroestrutural em português...",
+        "finalScore": 50,
+        "feedback": "Avaliação macroestrutural...",
         "strengths": ["ponto 1", "ponto 2"],
         "weaknesses": ["melhoria 1", "melhoria 2"],
-        "detailedAnalysis": "Sua análise técnica em português...",
+        "detailedAnalysis": "Análise técnica...",
         "scoresByAspect": [
-          { "aspect": "Descrição do Aspecto 1", "score": 10, "maxScore": 15, "feedback": "Comentário sobre este ponto" },
-          { "aspect": "Descrição do Aspecto 2", "score": 8, "maxScore": 15, "feedback": "Comentário sobre este ponto" },
-          { "aspect": "Descrição do Aspecto 3", "score": 12, "maxScore": 20, "feedback": "Comentário sobre este ponto" }
+          { "aspect": "Descrição do Aspecto 1", "score": 10, "maxScore": 15, "feedback": "Feedback do ponto" },
+          { "aspect": "Descrição do Aspecto 2", "score": 10, "maxScore": 15, "feedback": "Feedback do ponto" },
+          { "aspect": "Descrição do Aspecto 3", "score": 10, "maxScore": 20, "feedback": "Feedback do ponto" }
         ]
       }`,
       schema: CorrectEssayOutputSchema,

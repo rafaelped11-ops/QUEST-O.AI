@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Info, ThumbsUp, ThumbsDown, FileSearch } from "lucide-react";
+import { CheckCircle2, XCircle, Info, ThumbsUp, ThumbsDown, FileSearch, ExternalLink } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -101,7 +101,7 @@ export function QuestionCard({
                       ? (isOptionCorrect ? 'bg-green-500/10 border-green-500 shadow-sm' : isOptionSelected ? 'bg-destructive/10 border-destructive' : 'opacity-60 grayscale-[0.5]')
                       : 'border-muted/50 hover:border-primary/40 cursor-pointer hover:bg-muted/10'
                   }`}>
-                    <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 font-black text-sm ${isSubmitted && isOptionCorrect ? 'bg-green-500 border-green-500 text-white' : 'border-primary/30 text-primary'}`}>
+                    <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 font-black text-sm ${isSubmitted && isOptionCorrect ? 'bg-green-500 border-green-600 text-white' : 'border-primary/30 text-primary'}`}>
                       {isSubmitted && isOptionCorrect ? <CheckCircle2 className="h-5 w-5" /> : letter}
                     </div>
                     <Label className="flex-1 cursor-pointer font-bold text-base leading-snug">
@@ -137,19 +137,31 @@ export function QuestionCard({
                       VERIFICAR FONTES (PÁG. {sourcePage})
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden">
-                    <DialogHeader className="p-4 border-b">
+                  <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col">
+                    <DialogHeader className="p-4 border-b flex flex-row items-center justify-between">
                       <DialogTitle className="font-black flex items-center gap-2">
                         <FileSearch className="h-5 w-5 text-primary" /> 
                         Fonte da Questão - Página {sourcePage}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 h-full w-full bg-muted/20">
-                      {pdfUrl && (
-                        <iframe 
-                          src={`${pdfUrl}#page=${sourcePage}`} 
-                          className="w-full h-full border-none"
-                        />
+                    <div className="flex-1 h-full w-full bg-muted/20 relative">
+                      {pdfUrl ? (
+                        <object
+                          data={`${pdfUrl}#page=${sourcePage}`}
+                          type="application/pdf"
+                          className="w-full h-full"
+                        >
+                          <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+                            <p className="font-bold">O visualizador foi bloqueado pelo seu navegador.</p>
+                            <Button asChild className="font-black">
+                              <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="mr-2 h-4 w-4" /> Abrir PDF Externamente
+                              </a>
+                            </Button>
+                          </div>
+                        </object>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">PDF não disponível</div>
                       )}
                     </div>
                   </DialogContent>
