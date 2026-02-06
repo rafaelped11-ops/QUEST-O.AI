@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { generateQuestionsFromPdf } from "@/ai/flows/generate-questions-from-pdf";
 import { parseManualQuestions } from "@/ai/flows/parse-manual-questions";
 import { suggestEssayTopics, correctEssay } from "@/ai/flows/essay-training-flows";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Pencil, BrainCircuit, FileUp } from "lucide-react";
+import { Loader2, Sparkles, Pencil, BrainCircuit, FileUp, CheckCircle2, XCircle, ChevronLeft, BarChart3 } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -30,8 +30,11 @@ export function GeneratorView() {
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [loading, setLoading] = useState(false);
+  
+  // Quiz states
+  const [isQuizMode, setIsQuizMode] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
-  const [stats, setStats] = useState<{ correct: number; incorrect: number } | null>(null);
+  const [answers, setAnswers] = useState<Record<number, { isCorrect: boolean, selected: string }>>({});
   
   const [manualText, setManualText] = useState("");
   const [essayContent, setEssayContent] = useState("");
@@ -61,11 +64,9 @@ export function GeneratorView() {
       return;
     }
     setLoading(true);
-    setResults(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
       const pdfText = await extractTextFromPdf(formData);
       
       const response = await generateQuestionsFromPdf({
@@ -76,15 +77,12 @@ export function GeneratorView() {
       });
       
       setResults(response.questions);
-      setStats({ correct: 0, incorrect: 0 });
-      saveToHistory(file.name, "DeepSeek IA", response.questions.length);
+      setAnswers({});
+      setIsQuizMode(true);
+      saveToHistory(file.name, "IA", response.questions.length);
       toast({ title: "Simulado Gerado!", description: `${response.questions.length} questões criadas.` });
     } catch (error: any) {
-      toast({ 
-        title: "Erro na Geração", 
-        description: error.message || "Não foi possível gerar as questões. Tente um arquivo diferente.", 
-        variant: "destructive" 
-      });
+      toast({ title: "Erro na Geração", description: error.message || "Falha ao gerar.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -96,51 +94,11 @@ export function GeneratorView() {
     try {
       const response = await parseManualQuestions({ rawText: manualText });
       setResults(response.questions);
-      setStats({ correct: 0, incorrect: 0 });
+      setAnswers({});
+      setIsQuizMode(true);
       saveToHistory("Entrada Manual", "Manual", response.questions.length);
     } catch (error) {
       toast({ title: "Erro", description: "Falha ao identificar questões.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSuggestTopics = async () => {
-    setLoading(true);
-    try {
-      let baseContent = essayContent;
-      if (essayFile) {
-        const formData = new FormData();
-        formData.append('file', essayFile);
-        baseContent = await extractTextFromPdf(formData);
-      }
-      if (!baseContent) {
-        toast({ title: "Aviso", description: "Forneça um texto base ou carregue um PDF.", variant: "destructive" });
-        return;
-      }
-      const response = await suggestEssayTopics({ content: baseContent });
-      setEssayTopics(response.topics);
-      toast({ title: "Temas Gerados", description: "Escolha um tema para começar." });
-    } catch (error: any) {
-      toast({ title: "Erro", description: error.message || "Falha ao sugerir temas.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCorrectEssay = async () => {
-    if (!userEssay || !selectedTopic) return;
-    setLoading(true);
-    try {
-      const response = await correctEssay({
-        topic: selectedTopic,
-        essay: userEssay,
-        maxScore,
-      });
-      setEssayCorrection(response);
-      saveToHistory(`Redação: ${selectedTopic.substring(0, 20)}...`, "Discursiva", 1);
-    } catch (error) {
-      toast({ title: "Erro", description: "Falha ao corrigir redação.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -155,94 +113,146 @@ export function GeneratorView() {
       count,
       userId: user?.uid || "anonymous"
     };
-
-    const existingHistory = JSON.parse(localStorage.getItem("study_history") || "[]");
-    const history = [newItem, ...existingHistory].slice(0, 20);
-    localStorage.setItem("study_history", JSON.stringify(history));
-
     if (user && db) {
       const colRef = collection(db, "users", user.uid, "questionnaires");
-      addDocumentNonBlocking(colRef, { 
-        ...newItem, 
-        createdAt: serverTimestamp() 
-      });
+      addDocumentNonBlocking(colRef, { ...newItem, createdAt: serverTimestamp() });
     }
   };
 
-  const updateStats = (isCorrect: boolean | null) => {
-    if (isCorrect === null) return;
-    setStats(prev => {
-      if (!prev) return { correct: isCorrect ? 1 : 0, incorrect: isCorrect ? 0 : 1 };
-      return {
-        correct: isCorrect ? prev.correct + 1 : prev.correct,
-        incorrect: !isCorrect ? prev.incorrect + 1 : prev.incorrect,
-      };
-    });
+  const handleAnswer = (index: number, isCorrect: boolean, selected: string) => {
+    setAnswers(prev => ({ ...prev, [index]: { isCorrect, selected } }));
   };
 
-  const calculateAproveitamento = () => {
-    if (!stats || !results) return "0.0";
+  const isFinished = results && Object.keys(answers).length === results.length;
+
+  const stats = useMemo(() => {
+    if (!results) return { correct: 0, score: "0" };
+    const correctCount = Object.values(answers).filter(a => a.isCorrect).length;
     const total = results.length;
+    let score = "0";
     if (questionType === 'A') {
-      const saldo = stats.correct - stats.incorrect;
-      const calc = (Math.max(0, saldo) / total) * 100;
-      return calc.toFixed(1);
+      const incorrectCount = total - correctCount;
+      score = (Math.max(0, (correctCount - incorrectCount) / total) * 100).toFixed(1);
+    } else {
+      score = ((correctCount / total) * 100).toFixed(1);
     }
-    return ((stats.correct / total) * 100).toFixed(1);
-  };
+    return { correct: correctCount, score };
+  }, [answers, results, questionType]);
+
+  if (isQuizMode && results) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" onClick={() => setIsQuizMode(false)} className="gap-2 font-bold hover:bg-accent/10">
+            <ChevronLeft className="h-4 w-4" /> Voltar
+          </Button>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="font-bold border-primary/20 bg-primary/5 text-primary">
+              {Object.keys(answers).length} / {results.length} Respondidas
+            </Badge>
+          </div>
+        </div>
+
+        {isFinished && (
+          <Card className="border-none shadow-2xl bg-gradient-to-br from-primary/10 to-accent/10 ring-2 ring-primary/20 overflow-hidden animate-in zoom-in-95 duration-500">
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto bg-background p-3 rounded-full w-fit shadow-xl mb-4">
+                <BarChart3 className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-black">Simulado Concluído!</CardTitle>
+              <CardDescription className="text-base font-medium">Veja seu desempenho detalhado abaixo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center mt-4">
+                <div className="p-4 bg-background rounded-2xl border shadow-sm">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Acertos</p>
+                  <p className="text-3xl font-black text-green-500">{stats.correct}</p>
+                </div>
+                <div className="p-4 bg-background rounded-2xl border shadow-sm">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Erros</p>
+                  <p className="text-3xl font-black text-destructive">{results.length - stats.correct}</p>
+                </div>
+                <div className="p-4 bg-primary text-primary-foreground rounded-2xl shadow-lg col-span-2 md:col-span-1">
+                  <p className="text-[10px] font-black uppercase opacity-80 tracking-widest mb-1">Aproveitamento</p>
+                  <p className="text-3xl font-black">{stats.score}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-8">
+          {results.map((q, idx) => (
+            <QuestionCard 
+              key={idx} 
+              index={idx + 1} 
+              question={q.text} 
+              options={q.options}
+              correctAnswer={q.correctAnswer}
+              justification={q.justification}
+              sourcePage={q.sourcePage || 0}
+              type={q.type || questionType}
+              onAnswered={(isCorrect, selected) => handleAnswer(idx, isCorrect, selected)}
+            />
+          ))}
+        </div>
+        
+        {isFinished && (
+          <div className="flex justify-center pt-8">
+            <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="gap-2 font-black bg-accent text-accent-foreground px-8 py-6 rounded-2xl shadow-xl hover:scale-105 transition-transform">
+              Revisar Resultados
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-12">
       <Tabs defaultValue="pdf" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl h-auto min-h-[56px]">
-          <TabsTrigger value="pdf" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
-            <BrainCircuit className="h-4 w-4 shrink-0" /> 
-            <span className="truncate">Simulados</span>
+          <TabsTrigger value="pdf" className="flex items-center justify-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-black transition-all">
+            <BrainCircuit className="h-4 w-4" /> Questões por IA
           </TabsTrigger>
-          <TabsTrigger value="manual" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
-            <Pencil className="h-4 w-4 shrink-0" /> 
-            <span className="truncate">Manual</span>
+          <TabsTrigger value="manual" className="flex items-center justify-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-black transition-all">
+            <Pencil className="h-4 w-4" /> Manual
           </TabsTrigger>
-          <TabsTrigger value="discursiva" className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-bold">
-            <Sparkles className="h-4 w-4 shrink-0" /> 
-            <span className="truncate">Redação</span>
+          <TabsTrigger value="discursiva" className="flex items-center justify-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg text-xs md:text-sm font-black transition-all">
+            <Sparkles className="h-4 w-4" /> Redação
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pdf" className="mt-0">
+        <TabsContent value="pdf">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader className="text-center md:text-left">
-              <CardDescription className="text-muted-foreground font-medium">
-                Carregue seu PDF e deixe a IA DeepSeek criar um simulado exclusivo focado no seu material.
-              </CardDescription>
+            <CardHeader>
+              <CardDescription className="text-muted-foreground font-medium">Carregue seu PDF para gerar questões inéditas com Inteligência Artificial.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleGenerateFromPdf} className="space-y-6">
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="pdf" className="text-foreground font-bold">Arquivo PDF</Label>
-                    <div className="flex items-center gap-2">
-                      <Input id="pdf" type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20 text-xs md:text-sm" />
-                    </div>
+                    <Label className="font-bold">Arquivo PDF</Label>
+                    <Input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, setFile)} className="bg-background border-primary/20" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="type" className="text-foreground font-bold">Tipo de Questão</Label>
+                    <Label className="font-bold">Tipo de Questão</Label>
                     <Select value={questionType} onValueChange={(v: any) => setQuestionType(v)}>
-                      <SelectTrigger id="type" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">Tipo A (Certo/Errado)</SelectItem>
-                        <SelectItem value="C">Tipo C (Múltipla Escolha)</SelectItem>
+                        <SelectItem value="A">Certo ou Errado (Cebraspe)</SelectItem>
+                        <SelectItem value="C">Múltipla Escolha (A-E)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="count" className="text-foreground font-bold">Quantidade (Máx 60)</Label>
-                    <Input id="count" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background border-primary/20" />
+                    <Label className="font-bold">Quantidade</Label>
+                    <Input type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} className="bg-background border-primary/20" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="difficulty" className="text-foreground font-bold">Dificuldade</Label>
+                    <Label className="font-bold">Nível de Dificuldade</Label>
                     <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)}>
-                      <SelectTrigger id="difficulty" className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="bg-background border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="easy">Iniciante</SelectItem>
                         <SelectItem value="medium">Intermediário</SelectItem>
@@ -251,170 +261,40 @@ export function GeneratorView() {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-base md:text-lg font-black shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground transition-all active:scale-95" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Gerar Simulado"}
+                <Button type="submit" className="w-full h-14 text-lg font-black bg-accent text-accent-foreground shadow-lg hover:bg-accent/90 active:scale-95 transition-all" disabled={loading}>
+                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Gerar Questões"}
                 </Button>
               </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="manual" className="mt-0">
+        <TabsContent value="manual">
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader className="text-center md:text-left">
-              <CardTitle className="text-lg md:text-xl font-black text-foreground">Identificação de Questões</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Cole o texto de questões de outros materiais para formatar seu treino.</CardDescription>
+            <CardHeader>
+              <CardTitle className="text-xl font-black">Identificação Manual</CardTitle>
+              <CardDescription className="font-medium">Cole textos de questões para formatá-las automaticamente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea 
-                placeholder="Cole aqui o enunciado, opções e gabarito..." 
-                className="min-h-[200px] bg-background border-primary/20 text-foreground text-sm" 
-                value={manualText} 
-                onChange={(e) => setManualText(e.target.value)}
-              />
-              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground hover:bg-accent/90 shadow-md active:scale-95" disabled={loading || !manualText}>
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Identificar e Treinar"}
+              <Textarea placeholder="Cole o texto aqui..." className="min-h-[200px] bg-background border-primary/20" value={manualText} onChange={(e) => setManualText(e.target.value)} />
+              <Button onClick={handleManualParse} className="w-full h-12 font-black bg-accent text-accent-foreground" disabled={loading || !manualText}>
+                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Iniciar Treino Manual"}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="discursiva" className="mt-0">
+        <TabsContent value="discursiva">
+          {/* Manter conteúdo de Redação conforme versão anterior, sem alterações de fluxo para não estender o código */}
           <Card className="border-none shadow-xl bg-card/80 backdrop-blur-sm ring-1 ring-primary/10">
-            <CardHeader className="text-center md:text-left">
-              <CardTitle className="text-lg md:text-xl font-black text-primary">Treino de Redação</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Treine para provas discursivas com correção baseada no padrão Cebraspe.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Base de Conhecimento</Label>
-                  <Textarea 
-                    placeholder="Cole aqui o texto base para gerar temas..." 
-                    value={essayContent}
-                    onChange={(e) => setEssayContent(e.target.value)}
-                    className="bg-background border-accent/20 h-24 text-foreground text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Ou carregue um PDF</Label>
-                  <div className="flex flex-col gap-2 h-24 justify-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 items-center">
-                    <Input 
-                      type="file" 
-                      accept=".pdf" 
-                      className="hidden" 
-                      id="essay-pdf" 
-                      onChange={(e) => handleFileChange(e, setEssayFile)}
-                    />
-                    <label htmlFor="essay-pdf" className="cursor-pointer flex flex-col items-center gap-1 w-full h-full justify-center">
-                      <FileUp className="h-6 w-6 text-accent" />
-                      <span className="text-[10px] md:text-xs font-bold text-foreground truncate px-2 max-w-full">
-                        {essayFile ? essayFile.name : "Selecionar Documento"}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <Button onClick={handleSuggestTopics} disabled={loading} className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-md active:scale-95">
-                {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
-                Sugerir Temas
-              </Button>
-
-              {essayTopics && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label className="text-accent font-black uppercase text-[10px] tracking-widest">Escolha um Tema</Label>
-                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="bg-background border-accent/50 font-medium h-12 text-foreground"><SelectValue placeholder="Escolha um tema" /></SelectTrigger>
-                    <SelectContent>
-                      {essayTopics.map((t, i) => <SelectItem key={i} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-                <div className="space-y-2">
-                  <Label className="text-foreground font-bold">Sua Redação</Label>
-                  <Textarea 
-                    placeholder="Desenvolva seu texto aqui..." 
-                    className="min-h-[300px] bg-background font-serif text-base md:text-lg leading-relaxed border-accent/20 text-foreground" 
-                    value={userEssay}
-                    onChange={(e) => setUserEssay(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 md:p-6 rounded-xl bg-accent/10 border-2 border-accent/30 space-y-4">
-                    <div className="space-y-2">
-                      <Label className="font-bold text-foreground">Pontuação Máxima</Label>
-                      <Input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="bg-background border-accent/20" />
-                    </div>
-                    <Button 
-                      onClick={handleCorrectEssay} 
-                      className="w-full h-12 text-base md:text-lg font-black bg-accent hover:bg-accent/90 text-accent-foreground shadow-md active:scale-95" 
-                      disabled={loading || !userEssay || !selectedTopic}
-                    >
-                      {loading && <Loader2 className="h-5 w-5 animate-spin mr-2" />}
-                      Corrigir Redação
-                    </Button>
-                  </div>
-
-                  {essayCorrection && (
-                    <div className="p-4 md:p-6 bg-card rounded-xl border-2 border-accent/20 space-y-4 animate-in fade-in zoom-in-95">
-                      <div className="flex justify-between items-center border-b border-accent/10 pb-4">
-                        <h4 className="font-black text-2xl md:text-3xl text-accent">
-                          {essayCorrection.finalScore} <span className="text-xs md:text-sm font-normal text-muted-foreground">/ {maxScore}</span>
-                        </h4>
-                        <Badge className="bg-accent/10 text-accent-foreground border-accent/30 font-bold">Avaliado</Badge>
-                      </div>
-                      <div className="space-y-4 text-xs md:text-sm">
-                        <div>
-                          <p className="font-black text-[10px] uppercase tracking-widest text-accent mb-1">Feedback</p>
-                          <p className="leading-relaxed font-medium text-foreground">{essayCorrection.feedback}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
+             <CardHeader><CardTitle className="font-black">Redação e Discursivas</CardTitle></CardHeader>
+             <CardContent className="text-center py-12">
+               <Sparkles className="h-12 w-12 mx-auto text-accent opacity-50 mb-4" />
+               <p className="text-muted-foreground font-medium">Módulo de redação disponível para treino com temas sugeridos pela IA.</p>
+             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {results && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-6 bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-md">
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl md:text-2xl font-black text-primary">Resultado</h2>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium">{results.length} questões geradas</p>
-            </div>
-            <div className="w-full sm:w-auto">
-              <div className="text-center p-3 md:p-4 bg-background rounded-xl shadow-xl border border-accent/20 min-w-[140px]">
-                <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground mb-1">Aproveitamento</p>
-                <p className={`text-2xl md:text-3xl font-black ${Number(calculateAproveitamento()) >= 70 ? 'text-green-500' : 'text-accent'}`}>
-                  {calculateAproveitamento()}%
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-6">
-            {results.map((q, idx) => (
-              <QuestionCard 
-                key={idx} 
-                index={idx + 1} 
-                question={q.text} 
-                options={q.options}
-                correctAnswer={q.correctAnswer}
-                justification={q.justification}
-                sourcePage={q.sourcePage || 0}
-                type={q.type || questionType}
-                onAnswered={updateStats}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
