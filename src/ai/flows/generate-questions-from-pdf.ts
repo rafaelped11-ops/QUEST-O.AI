@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF com páginas dinâmicas.
+ * @fileOverview Gera questões de concurso a partir de um documento PDF.
  */
 
 import { ai } from '@/ai/genkit';
@@ -41,31 +41,43 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
     let specificInstructions = "";
     if (isTypeA) {
       specificInstructions = `
-        TIPO: Certo ou Errado.
-        - O campo "correctAnswer" DEVE ser APENAS "C" ou "E".
-        - O campo "options" deve ser uma lista vazia [].
+        FORMATO: CERTO OU ERRADO (Estilo Cebraspe).
+        - "correctAnswer": Deve ser APENAS a letra "C" ou "E".
+        - "options": Deve ser um array vazio [].
       `;
     } else {
       specificInstructions = `
-        TIPO: Múltipla Escolha.
-        - O campo "options" deve conter EXATAMENTE 5 alternativas (texto).
-        - O campo "correctAnswer" deve ser a LETRA da resposta correta: "A", "B", "C", "D" ou "E".
+        FORMATO: MÚLTIPLA ESCOLHA (A-E).
+        - "options": Deve conter exatamente 5 strings com as alternativas.
+        - "correctAnswer": Deve ser a LETRA da resposta correta ("A", "B", "C", "D" ou "E").
       `;
     }
 
-    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto fornecido abaixo.
-    
-    INSTRUÇÕES DE FORMATO:
+    const prompt = `Gere exatamente ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas rigorosamente no texto técnico abaixo.
+
+    REGRAS OBRIGATÓRIAS:
     1. ${specificInstructions}
-    2. "sourcePage": Identifique a página aproximada onde a informação se encontra no texto original.
-    3. Responda APENAS com o JSON no formato: { "questions": [...] }
+    2. "sourcePage": Tente identificar em qual página do PDF original a informação está. Se não conseguir precisar, use uma estimativa baseada na posição do texto.
+    3. Use a chave plural "questions" no JSON de saída.
+    
+    ESTRUTURA JSON ESPERADA:
+    {
+      "questions": [
+        {
+          "text": "...",
+          "correctAnswer": "...",
+          "justification": "...",
+          "sourcePage": 1
+        }
+      ]
+    }
 
     TEXTO PARA ANÁLISE:
-    ${input.pdfText.substring(0, 15000)} // Limite para evitar estouro de tokens
+    ${input.pdfText.substring(0, 12000)}
     `;
 
     return await callAI({
-      system: `Você é um examinador de concursos experiente. Gere questões técnicas e doutrinárias com base no material fornecido.`,
+      system: `Você é um examinador de concursos públicos. Crie itens inéditos, técnicos e desafiadores baseados no material fornecido.`,
       prompt,
       schema: GenerateQuestionsFromPdfOutputSchema,
     });

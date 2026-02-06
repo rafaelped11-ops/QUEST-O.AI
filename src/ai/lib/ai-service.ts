@@ -3,8 +3,7 @@
 import { z } from 'zod';
 
 /**
- * Provedor Universal de IA via OpenRouter com Fallback Automático.
- * Otimizado para o ambiente do Firebase App Hosting.
+ * Provedor Universal de IA via OpenRouter com Fallback Automático e Limpeza de JSON Robusta.
  */
 
 interface AIConfig {
@@ -19,13 +18,13 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
   }),
 };
 
-// Lista de modelos gratuitos estáveis para fallback, reordenada por confiabilidade em JSON
+// Modelos gratuitos estáveis e confiáveis para JSON
 const FREE_MODELS = [
+  'google/gemini-2.0-flash-lite-preview-02-05:free',
   'meta-llama/llama-3.1-8b-instruct:free',
-  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'qwen/qwen-2.5-7b-instruct:free',
   'mistralai/mistral-7b-instruct:free',
   'google/gemma-2-9b-it:free',
-  'qwen/qwen-2-7b-instruct:free',
 ];
 
 export async function callAI<T>(params: {
@@ -44,11 +43,10 @@ export async function callAI<T>(params: {
   const requestedModel = process.env.AI_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)];
 
-  // Instruções reforçadas para saída JSON limpa
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
   IMPORTANTE: Responda EXCLUSIVAMENTE com um objeto JSON válido. 
-  Não inclua textos explicativos, preâmbulos, comentários ou blocos de código Markdown.
-  A saída deve começar com { e terminar com }.`;
+  NUNCA inclua textos explicativos, preâmbulos ou conclusões.
+  A saída deve ser apenas o JSON bruto iniciando com { e terminando com }.`;
 
   let lastError: any = null;
 
@@ -69,13 +67,13 @@ export async function callAI<T>(params: {
             { role: 'user', content: params.prompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.2, // Menor temperatura para maior consistência
+          temperature: 0.1, // Temperatura baixa para maior precisão estrutural
         }),
       });
 
       if (!response.ok) {
-        console.warn(`Modelo ${model} indisponível (${response.status}).`);
-        continue; 
+        console.warn(`Modelo ${model} retornou erro ${response.status}. Tentando próximo...`);
+        continue;
       }
 
       const result = await response.json();
@@ -83,32 +81,28 @@ export async function callAI<T>(params: {
 
       if (!content) continue;
 
-      // Limpeza robusta do conteúdo
+      // Limpeza de JSON Ultra-Robusta: busca o primeiro { e o último }
       let cleanContent = content.trim();
+      const jsonStart = cleanContent.indexOf('{');
+      const jsonEnd = cleanContent.lastIndexOf('}');
       
-      // Remove blocos de código markdown se existirem
-      if (cleanContent.includes('```')) {
-        const matches = cleanContent.match(/```(?:json)?([\s\S]*?)```/);
-        if (matches && matches[1]) {
-          cleanContent = matches[1].trim();
-        } else {
-          cleanContent = cleanContent.replace(/```json/g, '').replace(/```/g, '').trim();
-        }
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
       }
-      
+
       try {
         const jsonData = JSON.parse(cleanContent);
         return params.schema.parse(jsonData);
       } catch (parseError) {
-        console.warn(`Falha no parse do modelo ${model}. Tentando próximo...`);
+        console.warn(`Modelo ${model} gerou JSON inválido. Tentando próximo...`);
         continue;
       }
 
     } catch (error: any) {
       lastError = error;
-      console.error(`Falha ao tentar modelo ${model}:`, error.message);
+      console.error(`Falha fatal ao tentar modelo ${model}:`, error.message);
     }
   }
 
-  throw lastError || new Error(`Todos os modelos de IA falharam ao gerar uma resposta válida.`);
+  throw lastError || new Error(`A IA não conseguiu gerar uma resposta válida após tentar múltiplos modelos.`);
 }
