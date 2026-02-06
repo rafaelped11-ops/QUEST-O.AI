@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -12,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText } from "lucide-react";
+import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText, ChevronDown } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +41,8 @@ export function GeneratorView() {
   const [hasSaved, setHasSaved] = useState(false);
   
   // Essay states
-  const [essayTopics, setEssayTopics] = useState<string[]>([]);
-  const [selectedTopic, setSelectedTopic] = useState("");
+  const [essayTopics, setEssayTopics] = useState<any[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<any>(null);
   const [essayText, setEssayText] = useState("");
   const [essayCorrection, setEssayCorrection] = useState<any>(null);
   const [essayMaxScore, setEssayMaxScore] = useState(100);
@@ -127,7 +126,7 @@ export function GeneratorView() {
     setLoading(true);
     try {
       const response = await correctEssay({ 
-        topic: selectedTopic, 
+        topic: selectedTopic.title, 
         essay: essayText, 
         maxScore: essayMaxScore 
       });
@@ -149,7 +148,6 @@ export function GeneratorView() {
     let scoreValue = (correctCount / total) * 100;
     if (questionType === 'A') {
       const incorrectCount = answeredKeys.length - correctCount;
-      // Regra Cebraspe: Uma errada anula uma certa
       scoreValue = Math.max(0, (correctCount - incorrectCount) / total) * 100;
     }
     return { correct: correctCount, score: scoreValue.toFixed(1) };
@@ -253,7 +251,7 @@ export function GeneratorView() {
              <Badge className="font-black py-0.5 px-3 text-[10px] bg-primary/10 text-primary border-primary/20">PROGRESSO</Badge>
              <span className="text-sm font-black">{currentIdx + 1} de {results.length}</span>
           </div>
-          <div className="w-[80px]"></div> {/* Spacer */}
+          <div className="w-[80px]"></div>
         </div>
 
         <div className="animate-in slide-in-from-right-4 duration-300">
@@ -413,9 +411,15 @@ export function GeneratorView() {
                       <div 
                         key={i} 
                         onClick={() => setSelectedTopic(topic)}
-                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all font-bold text-sm ${selectedTopic === topic ? 'border-primary bg-primary/5 text-primary shadow-sm' : 'border-muted/50 hover:border-primary/30 bg-card'}`}
+                        className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${selectedTopic?.title === topic.title ? 'border-primary bg-primary/5 shadow-sm' : 'border-muted/50 hover:border-primary/30 bg-card'}`}
                       >
-                        {topic}
+                        <h4 className="font-black text-primary mb-3">{topic.title}</h4>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">Tópicos Obrigatórios de Abordagem:</p>
+                           <ul className="text-xs space-y-1 font-medium text-foreground/80 list-disc list-inside">
+                             {topic.aspects.map((aspect: string, idx: number) => <li key={idx}>{aspect}</li>)}
+                           </ul>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -438,7 +442,7 @@ export function GeneratorView() {
                   </div>
                   
                   <Textarea 
-                    placeholder="Cole seu texto aqui ou escreva diretamente..." 
+                    placeholder="Escreva sua redação aqui, abordando todos os tópicos listados acima..." 
                     className="min-h-[400px] font-medium leading-relaxed bg-background/50 focus:bg-background transition-all"
                     value={essayText}
                     onChange={(e) => setEssayText(e.target.value)}

@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -6,7 +5,10 @@ import { z } from 'zod';
 import { callAI } from '@/ai/lib/ai-service';
 
 const SuggestTopicsOutputSchema = z.object({
-  topics: z.array(z.string()).length(3),
+  topics: z.array(z.object({
+    title: z.string(),
+    aspects: z.array(z.string()).describe("Lista de 3 aspectos específicos para o candidato abordar."),
+  })).length(3),
 });
 
 export async function suggestEssayTopics(input: { content: string }) {
@@ -25,11 +27,10 @@ const suggestEssayTopicsFlow = ai.defineFlow(
       
       CRITÉRIOS CEBRASPE PARA TEMAS:
       1. Os temas devem ser atuais e vinculados ao conteúdo técnico fornecido.
-      2. Devem incluir aspectos específicos para o candidato abordar (tópicos 1, 2 e 3).`,
+      2. Devem incluir obrigatoriamente 3 aspectos específicos (tópicos 1, 2 e 3) para o candidato abordar, cada um com uma pontuação sugerida implícita.`,
       prompt: `Baseado no conteúdo abaixo, sugira EXATAMENTE 3 temas prováveis. 
       
-      IMPORTANTE: Retorne obrigatoriamente um objeto JSON com a chave "topics" contendo uma lista de 3 strings.
-      Exemplo: { "topics": ["Tema 1", "Tema 2", "Tema 3"] }
+      IMPORTANTE: Retorne um JSON com a chave "topics", contendo objetos com "title" e "aspects" (um array de 3 strings).
 
       CONTEÚDO:
       ${input.content}`,

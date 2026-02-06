@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Info, ThumbsUp, ThumbsDown, FileSearch } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface QuestionCardProps {
   index: number;
@@ -32,19 +33,13 @@ export function QuestionCard({
 }: QuestionCardProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showSource, setShowSource] = useState(false);
 
   const handleSelection = (value: string) => {
     if (isSubmitted) return;
     setSelectedAnswer(value);
     setIsSubmitted(true);
     onAnswered(value === correctAnswer, value);
-  };
-
-  const handleVerifySource = () => {
-    if (pdfUrl) {
-      // Abre o PDF na página específica. Nota: Muitos navegadores suportam #page=N
-      window.open(`${pdfUrl}#page=${sourcePage}`, '_blank');
-    }
   };
 
   const isCorrect = selectedAnswer === correctAnswer;
@@ -130,16 +125,35 @@ export function QuestionCard({
                   <h5 className="font-black uppercase text-[10px] tracking-widest">Gabarito Comentado</h5>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-9 px-4 text-[10px] gap-2 font-black border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
-                  onClick={handleVerifySource}
-                  disabled={!pdfUrl}
-                >
-                  <FileSearch className="h-4 w-4" />
-                  VERIFICAR FONTES (PÁG. {sourcePage})
-                </Button>
+                <Dialog open={showSource} onOpenChange={setShowSource}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-9 px-4 text-[10px] gap-2 font-black border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                      disabled={!pdfUrl}
+                    >
+                      <FileSearch className="h-4 w-4" />
+                      VERIFICAR FONTES (PÁG. {sourcePage})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden">
+                    <DialogHeader className="p-4 border-b">
+                      <DialogTitle className="font-black flex items-center gap-2">
+                        <FileSearch className="h-5 w-5 text-primary" /> 
+                        Fonte da Questão - Página {sourcePage}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 h-full w-full bg-muted/20">
+                      {pdfUrl && (
+                        <iframe 
+                          src={`${pdfUrl}#page=${sourcePage}`} 
+                          className="w-full h-full border-none"
+                        />
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               
               <div className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium italic whitespace-pre-wrap">
