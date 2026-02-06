@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Gera questões de concurso a partir de um documento PDF utilizando o provedor universal.
+ * @fileOverview Gera questões de concurso a partir de um documento PDF.
  */
 
 import { ai } from '@/ai/genkit';
@@ -43,14 +43,26 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
       : "Múltipla Escolha (A a E). Forneça exatamente 5 opções claras.";
 
     const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto abaixo.
-    FORMATO: ${format}
+    
+    ESTRUTURA JSON OBRIGATÓRIA:
+    {
+      "questions": [
+        {
+          "text": "enunciado da questão",
+          "options": ["opção A", "opção B", "opção C", "opção D", "opção E"], // Apenas se for Múltipla Escolha
+          "correctAnswer": "C ou E ou A/B/C/D/E",
+          "justification": "explicação detalhada",
+          "sourcePage": 1 // número aproximado da página
+        }
+      ]
+    }
+
+    FORMATO DAS QUESTÕES: ${format}
     
     TEXTO:
     ${input.pdfText}`;
 
-    const system = `Você é um especialista em bancas examinadoras de concursos de alto nível (Cebraspe, FGV, FCC).
-    Sua missão é criar questões ABSOLUTAMENTE INÉDITAS baseadas INTEGRALMENTE no texto fornecido.
-    Varra todo o documento e forneça justificativas pedagógicas detalhadas citando a página aproximada.`;
+    const system = `Você é um examinador de concursos experiente. Crie questões ABSOLUTAMENTE INÉDITAS.`;
 
     return await callAI({
       system,

@@ -8,8 +8,9 @@ import { callAI } from '@/ai/lib/ai-service';
 const GenerateQuestionsFromTopicOutputSchema = z.object({
   questions: z.array(
     z.object({
-      question: z.string(),
-      answer: z.string(),
+      text: z.string(),
+      correctAnswer: z.string(),
+      justification: z.string(),
     })
   ),
 });
@@ -29,9 +30,22 @@ const generateQuestionsFromTopicFlow = ai.defineFlow(
     outputSchema: GenerateQuestionsFromTopicOutputSchema,
   },
   async (input) => {
+    const prompt = `Gere ${input.numberOfQuestions} questões sobre "${input.topic}" com dificuldade ${input.difficulty}.
+    
+    ESTRUTURA JSON OBRIGATÓRIA:
+    {
+      "questions": [
+        {
+          "text": "enunciado",
+          "correctAnswer": "resposta curta",
+          "justification": "explicação"
+        }
+      ]
+    }`;
+
     return await callAI({
       system: 'Você é um especialista em criar questões de simulado por tópico.',
-      prompt: `Gere ${input.numberOfQuestions} questões sobre o tópico "${input.topic}" com dificuldade ${input.difficulty}.`,
+      prompt,
       schema: GenerateQuestionsFromTopicOutputSchema,
     });
   }

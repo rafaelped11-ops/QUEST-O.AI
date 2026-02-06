@@ -20,7 +20,7 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
   }),
 };
 
-// Lista de modelos gratuitos estáveis para fallback (usados se o modelo principal falhar)
+// Lista de modelos gratuitos estáveis para fallback
 const FREE_MODELS = [
   'nvidia/nemotron-3-nano-30b-a3b:free',
   'meta-llama/llama-3.1-8b-instruct:free',
@@ -43,16 +43,13 @@ export async function callAI<T>(params: {
     throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
-  // Modelo solicitado pelo usuário via ENV ou fallback padrão
   const requestedModel = process.env.AI_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free';
-  
-  // Lista de tentativa: Primeiro o solicitado, depois os fallbacks gratuitos
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter(m => m !== requestedModel)];
 
-  // Instruções reforçadas para saída JSON
+  // Instruções reforçadas para saída JSON limpa
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
-  Responda EXCLUSIVAMENTE com um objeto JSON válido seguindo este esquema: ${JSON.stringify(params.schema)}.
-  Não inclua textos explicativos ou blocos de código Markdown (\`\`\`json).`;
+  Responda EXCLUSIVAMENTE com um objeto JSON válido. 
+  Não inclua textos explicativos, preâmbulos ou blocos de código Markdown (\`\`\`json).`;
 
   let lastError: any = null;
 
@@ -79,36 +76,31 @@ export async function callAI<T>(params: {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
-        if (response.status === 402) {
-          throw new Error('Saldo insuficiente no OpenRouter.');
-        }
-        
-        if (response.status === 404 || response.status === 400 || response.status === 503) {
-          console.warn(`Modelo ${model} indisponível ou incompatível (${response.status}). Tentando próximo da lista...`);
-          continue; 
-        }
-
-        throw new Error(`Erro OpenRouter (${response.status}) com modelo ${model}: ${errorData.error?.message || response.statusText}`);
+        if (response.status === 402) throw new Error('Saldo insuficiente no OpenRouter.');
+        console.warn(`Modelo ${model} indisponível (${response.status}). Tentando próximo...`);
+        continue; 
       }
 
       const result = await response.json();
       const content = result.choices?.[0]?.message?.content;
 
-      if (!content) throw new Error('A IA retornou uma resposta vazia.');
+      if (!content) continue;
 
       const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-      return params.schema.parse(JSON.parse(cleanContent));
+      const jsonData = JSON.parse(cleanContent);
+      
+      // Validação final com o esquema fornecido
+      return params.schema.parse(jsonData);
 
     } catch (error: any) {
-      if (error.message.includes('Saldo') || error instanceof z.ZodError) {
-        throw error;
-      }
-      
       lastError = error;
-      console.error(`Falha ao tentar modelo ${model}:`, error.message);
+      if (error instanceof z.ZodError) {
+        console.error(`Erro de validação com modelo ${model}:`, error.errors);
+      } else {
+        console.error(`Falha ao tentar modelo ${model}:`, error.message);
+      }
     }
   }
 
-  throw new Error(`Todos os modelos de IA falharam. Último erro: ${lastError?.message}`);
+  throw lastError || new Error(`Todos os modelos de IA falharam.`);
 }
