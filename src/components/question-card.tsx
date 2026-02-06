@@ -5,9 +5,9 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Info, ExternalLink, ThumbsUp, ThumbsDown } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CheckCircle2, XCircle, Info, ThumbsUp, ThumbsDown, FileSearch } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface QuestionCardProps {
   index: number;
@@ -119,19 +119,30 @@ export function QuestionCard({
         <CardFooter className="flex flex-col gap-4 bg-muted/10 border-t p-6 animate-in slide-in-from-top-2 duration-300">
           <div className="w-full space-y-4">
             <div className="bg-card dark:bg-zinc-900/50 p-5 rounded-xl shadow-inner border-2 border-accent/10 space-y-3">
-              <div className="flex items-center gap-2 text-accent">
-                <Info className="h-4 w-4" />
-                <h5 className="font-black uppercase text-[10px] tracking-widest">Justificativa Comentada</h5>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-accent">
+                  <Info className="h-4 w-4" />
+                  <h5 className="font-black uppercase text-[10px] tracking-widest">Justificativa Comentada</h5>
+                </div>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-accent gap-2 font-black border-accent/20 cursor-help">
+                        <FileSearch className="h-3 w-3" />
+                        Pág. {sourcePage}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-accent text-accent-foreground font-bold">
+                      Referência extraída da página {sourcePage} do seu PDF original.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
+              
               <p className="text-sm leading-relaxed text-foreground/90 font-medium italic whitespace-pre-wrap">
                 {justification}
               </p>
-              <div className="pt-2 flex justify-end">
-                <Badge variant="ghost" className="text-accent gap-2 font-black">
-                  <ExternalLink className="h-3 w-3" />
-                  Pág. {sourcePage}
-                </Badge>
-              </div>
             </div>
           </div>
         </CardFooter>
