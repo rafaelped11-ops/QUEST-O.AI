@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -38,31 +37,46 @@ const generateQuestionsFromPdfFlow = ai.defineFlow(
   },
   async (input) => {
     const isTypeA = input.questionType === 'A';
-    const format = isTypeA 
-      ? "Estilo Cebraspe (Certo ou Errado). A resposta deve ser 'C' ou 'E'." 
-      : "Múltipla Escolha (A a E). Forneça exatamente 5 opções claras.";
-
-    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas no texto abaixo.
     
+    let specificInstructions = "";
+    if (isTypeA) {
+      specificInstructions = `
+        TIPO DE QUESTÃO: Certo ou Errado (Estilo Cebraspe).
+        - O campo "options" DEVE ser omitido ou uma lista vazia [].
+        - O campo "correctAnswer" DEVE ser obrigatoriamente apenas a letra "C" (para Certo) ou "E" (para Errado).
+        - Cada item deve ser uma afirmação para o aluno julgar.
+      `;
+    } else {
+      specificInstructions = `
+        TIPO DE QUESTÃO: Múltipla Escolha (Estilo convencional).
+        - O campo "options" DEVE conter exatamente 5 strings, representando as alternativas A, B, C, D e E.
+        - O campo "correctAnswer" DEVE ser a letra da alternativa correta ("A", "B", "C", "D" ou "E").
+      `;
+    }
+
+    const prompt = `Gere ${input.numberOfQuestions} questões de nível ${input.difficulty} baseadas rigorosamente no texto fornecido abaixo.
+    
+    ${specificInstructions}
+
     ESTRUTURA JSON OBRIGATÓRIA:
     {
       "questions": [
         {
-          "text": "enunciado da questão",
-          "options": ["opção A", "opção B", "opção C", "opção D", "opção E"], // Apenas se for Múltipla Escolha
-          "correctAnswer": "C ou E ou A/B/C/D/E",
-          "justification": "explicação detalhada",
-          "sourcePage": 1 // número aproximado da página
+          "text": "O enunciado da questão ou afirmação para julgamento",
+          "options": ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"], 
+          "correctAnswer": "C/E ou A/B/C/D/E",
+          "justification": "Explicação detalhada baseada no texto",
+          "sourcePage": 1
         }
       ]
     }
-
-    FORMATO DAS QUESTÕES: ${format}
     
-    TEXTO:
+    TEXTO DE REFERÊNCIA:
     ${input.pdfText}`;
 
-    const system = `Você é um examinador de concursos experiente. Crie questões ABSOLUTAMENTE INÉDITAS.`;
+    const system = `Você é um examinador de bancas de concursos públicos de alto nível. 
+    Sua tarefa é criar questões inéditas, desafiadoras e tecnicamente precisas.
+    Siga estritamente o formato solicitado.`;
 
     return await callAI({
       system,
