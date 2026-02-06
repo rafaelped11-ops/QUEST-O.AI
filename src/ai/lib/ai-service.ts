@@ -26,7 +26,8 @@ export async function callAI<T>(params: {
   schema: z.ZodSchema<T>;
 }): Promise<T> {
   const providerKey = 'openrouter';
-  const model = process.env.AI_MODEL || 'google/gemma-2-9b-it:free';
+  // Alterado para um modelo free mais estável no OpenRouter
+  const model = process.env.AI_MODEL || 'google/gemma-7b-it:free';
   
   const configFactory = PROVIDERS[providerKey];
   const config = configFactory('');
@@ -35,10 +36,9 @@ export async function callAI<T>(params: {
     throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
-  // Instruções reforçadas para saída JSON, essencial para modelos menores/gratuitos
+  // Instruções reforçadas para saída JSON
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
-  Responda EXCLUSIVAMENTE com um objeto JSON válido.
-  ESQUEMA JSON: ${JSON.stringify(params.schema)}.
+  Responda EXCLUSIVAMENTE com um objeto JSON válido seguindo este esquema: ${JSON.stringify(params.schema)}.
   Não inclua textos explicativos ou blocos de código Markdown (\`\`\`json).`;
 
   try {
@@ -47,8 +47,8 @@ export async function callAI<T>(params: {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.key}`,
-        'HTTP-Referer': 'https://questoesai.app', // Obrigatório para OpenRouter
-        'X-Title': 'Questões AÍ',                 // Recomendado para OpenRouter
+        'HTTP-Referer': 'https://questoesai.app',
+        'X-Title': 'Questões AÍ',
       },
       body: JSON.stringify({
         model: model,
@@ -57,13 +57,14 @@ export async function callAI<T>(params: {
           { role: 'user', content: params.prompt },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.5, // Menor temperatura para maior consistência no JSON
+        temperature: 0.5,
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 402) throw new Error('Saldo insuficiente no OpenRouter.');
+      if (response.status === 404) throw new Error(`Modelo não encontrado (${model}). Tente trocar o AI_MODEL no .env.`);
       throw new Error(`Erro OpenRouter (${response.status}): ${errorData.error?.message || response.statusText}`);
     }
 
@@ -72,7 +73,6 @@ export async function callAI<T>(params: {
 
     if (!content) throw new Error('A IA retornou uma resposta vazia.');
 
-    // Limpeza de possíveis resíduos de markdown se o modelo ignorar o response_format
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     
     return params.schema.parse(JSON.parse(cleanContent));
