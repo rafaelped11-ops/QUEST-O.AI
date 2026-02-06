@@ -27,10 +27,18 @@ const suggestEssayTopicsFlow = ai.defineFlow(
       
       CRITÉRIOS CEBRASPE PARA TEMAS:
       1. Os temas devem ser atuais e vinculados ao conteúdo técnico fornecido.
-      2. Devem incluir obrigatoriamente 3 aspectos específicos (tópicos 1, 2 e 3) para o candidato abordar, cada um com uma pontuação sugerida implícita.`,
-      prompt: `Baseado no conteúdo abaixo, sugira EXATAMENTE 3 temas prováveis. 
+      2. Devem incluir obrigatoriamente 3 aspectos específicos (tópicos 1, 2 e 3) para o candidato abordar.`,
+      prompt: `Baseado no conteúdo fornecido, sugira EXATAMENTE 3 temas prováveis. 
       
-      IMPORTANTE: Retorne um JSON com a chave "topics", contendo objetos com "title" e "aspects" (um array de 3 strings).
+      ESTRUTURA JSON OBRIGATÓRIA:
+      {
+        "topics": [
+          {
+            "title": "Título do Tema",
+            "aspects": ["Aspecto 1", "Aspecto 2", "Aspecto 3"]
+          }
+        ]
+      }
 
       CONTEÚDO:
       ${input.content}`,
@@ -63,10 +71,28 @@ const correctEssayFlow = ai.defineFlow(
   },
   async (input) => {
     return await callAI({
-      system: `Você é um corretor especializado em bancas de concurso. A pontuação máxima é ${input.maxScore}.`,
+      system: `Você é um corretor especializado em bancas de concurso (como Cebraspe, FCC, FGV). 
+      Sua correção deve ser rigorosa e técnica. A pontuação máxima permitida é ${input.maxScore}.`,
       prompt: `Avalie a seguinte redação. 
       TEMA: "${input.topic}"
-      REDAÇÃO: ${input.essay}`,
+      REDAÇÃO DO CANDIDATO: 
+      "${input.essay}"
+
+      REGRAS DE RESPOSTA (JSON APENAS):
+      1. "finalScore" deve ser um número entre 0 e ${input.maxScore}.
+      2. "feedback" deve ser uma STRING curta com a avaliação geral.
+      3. "strengths" deve ser um ARRAY de strings com pontos fortes.
+      4. "weaknesses" deve ser um ARRAY de strings com pontos fracos.
+      5. "detailedAnalysis" deve ser uma STRING longa com a análise detalhada.
+
+      ESTRUTURA OBRIGATÓRIA:
+      {
+        "finalScore": ${input.maxScore / 2},
+        "feedback": "Texto da avaliação geral",
+        "strengths": ["ponto 1", "ponto 2"],
+        "weaknesses": ["melhoria 1", "melhoria 2"],
+        "detailedAnalysis": "Análise técnica completa..."
+      }`,
       schema: CorrectEssayOutputSchema,
     });
   }

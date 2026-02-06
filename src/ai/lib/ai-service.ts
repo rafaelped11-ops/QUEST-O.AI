@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -48,8 +47,9 @@ export async function callAI<T>(params: {
 
   // Instruções reforçadas para saída JSON limpa
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
-  Responda EXCLUSIVAMENTE com um objeto JSON válido. 
-  Não inclua textos explicativos, preâmbulos ou blocos de código Markdown (\`\`\`json).`;
+  IMPORTANTE: Responda EXCLUSIVAMENTE com um objeto JSON válido. 
+  Não inclua textos explicativos, preâmbulos, comentários ou blocos de código Markdown (\`\`\`json).
+  Certifique-se de que todos os campos obrigatórios do esquema solicitado estejam presentes e com os tipos corretos.`;
 
   let lastError: any = null;
 
@@ -70,7 +70,7 @@ export async function callAI<T>(params: {
             { role: 'user', content: params.prompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.5,
+          temperature: 0.3, // Menor temperatura para maior consistência no JSON
         }),
       });
 
@@ -86,21 +86,27 @@ export async function callAI<T>(params: {
 
       if (!content) continue;
 
+      // Limpeza agressiva para garantir que apenas o JSON seja processado
       const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-      const jsonData = JSON.parse(cleanContent);
       
-      // Validação final com o esquema fornecido
-      return params.schema.parse(jsonData);
+      try {
+        const jsonData = JSON.parse(cleanContent);
+        // Validação final com o esquema fornecido
+        return params.schema.parse(jsonData);
+      } catch (parseError) {
+        console.warn(`Falha no parse/validação do JSON com modelo ${model}. Tentando próximo...`);
+        continue;
+      }
 
     } catch (error: any) {
       lastError = error;
       if (error instanceof z.ZodError) {
-        console.error(`Erro de validação com modelo ${model}:`, error.errors);
+        console.error(`Erro de validação com modelo ${model}:`, JSON.stringify(error.errors, null, 2));
       } else {
         console.error(`Falha ao tentar modelo ${model}:`, error.message);
       }
     }
   }
 
-  throw lastError || new Error(`Todos os modelos de IA falharam.`);
+  throw lastError || new Error(`Todos os modelos de IA falharam ao gerar uma resposta válida.`);
 }
