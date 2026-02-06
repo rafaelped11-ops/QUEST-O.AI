@@ -4,8 +4,8 @@
 import { z } from 'zod';
 
 /**
- * Provedor Universal de IA.
- * Suporta OpenRouter, DeepSeek e OpenAI nativamente.
+ * Provedor Universal de IA via OpenRouter.
+ * Otimizado para o ambiente do Firebase App Hosting.
  */
 
 interface AIConfig {
@@ -18,14 +18,6 @@ const PROVIDERS: Record<string, (key: string) => AIConfig> = {
     url: 'https://openrouter.ai/api/v1/chat/completions',
     key: key || process.env.OPENROUTER_API_KEY || '',
   }),
-  deepseek: (key) => ({
-    url: 'https://api.deepseek.com/v1/chat/completions',
-    key: key || process.env.DEEPSEEK_API_KEY || '',
-  }),
-  openai: (key) => ({
-    url: 'https://api.openai.com/v1/chat/completions',
-    key: key || process.env.OPENAI_API_KEY || '',
-  }),
 };
 
 export async function callAI<T>(params: {
@@ -33,19 +25,21 @@ export async function callAI<T>(params: {
   prompt: string;
   schema: z.ZodSchema<T>;
 }): Promise<T> {
-  const providerKey = (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
-  const model = process.env.AI_MODEL || 'deepseek/deepseek-chat';
+  const providerKey = 'openrouter';
+  const model = process.env.AI_MODEL || 'google/gemma-2-9b-it:free';
   
-  const configFactory = PROVIDERS[providerKey] || PROVIDERS.openrouter;
+  const configFactory = PROVIDERS[providerKey];
   const config = configFactory('');
 
   if (!config.key) {
-    throw new Error(`Chave de API para o provedor ${providerKey} não configurada.`);
+    throw new Error(`OPENROUTER_API_KEY não configurada no ambiente.`);
   }
 
+  // Instruções reforçadas para saída JSON, essencial para modelos menores/gratuitos
   const systemPrompt = `${params.system || 'Você é um assistente útil.'} 
-  IMPORTANTE: Sua resposta DEVE ser um objeto JSON válido seguindo estritamente este esquema: ${JSON.stringify(params.schema)}.
-  Não inclua explicações ou markdown fora do JSON.`;
+  Responda EXCLUSIVAMENTE com um objeto JSON válido.
+  ESQUEMA JSON: ${JSON.stringify(params.schema)}.
+  Não inclua textos explicativos ou blocos de código Markdown (\`\`\`json).`;
 
   try {
     const response = await fetch(config.url, {
@@ -53,8 +47,8 @@ export async function callAI<T>(params: {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.key}`,
-        'HTTP-Referer': 'https://questoesai.app', // Necessário para OpenRouter
-        'X-Title': 'Questões AÍ',
+        'HTTP-Referer': 'https://questoesai.app', // Obrigatório para OpenRouter
+        'X-Title': 'Questões AÍ',                 // Recomendado para OpenRouter
       },
       body: JSON.stringify({
         model: model,
@@ -63,14 +57,14 @@ export async function callAI<T>(params: {
           { role: 'user', content: params.prompt },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.7,
+        temperature: 0.5, // Menor temperatura para maior consistência no JSON
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      if (response.status === 402) throw new Error('Saldo insuficiente no provedor de IA.');
-      throw new Error(`Erro na API (${response.status}): ${errorData.error?.message || response.statusText}`);
+      if (response.status === 402) throw new Error('Saldo insuficiente no OpenRouter.');
+      throw new Error(`Erro OpenRouter (${response.status}): ${errorData.error?.message || response.statusText}`);
     }
 
     const result = await response.json();
@@ -78,7 +72,10 @@ export async function callAI<T>(params: {
 
     if (!content) throw new Error('A IA retornou uma resposta vazia.');
 
-    return params.schema.parse(JSON.parse(content));
+    // Limpeza de possíveis resíduos de markdown se o modelo ignorar o response_format
+    const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    return params.schema.parse(JSON.parse(cleanContent));
   } catch (error: any) {
     console.error('Falha na chamada de IA:', error);
     throw error;
