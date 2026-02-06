@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -43,6 +42,7 @@ export function QuestionCard({
 
   const handleVerifySource = () => {
     if (pdfUrl) {
+      // Abre o PDF na página específica. Nota: Muitos navegadores suportam #page=N
       window.open(`${pdfUrl}#page=${sourcePage}`, '_blank');
     }
   };
@@ -50,49 +50,48 @@ export function QuestionCard({
   const isCorrect = selectedAnswer === correctAnswer;
 
   return (
-    <Card className={`overflow-hidden transition-all border-l-8 ${isSubmitted ? (isCorrect ? 'border-l-green-500' : 'border-l-destructive') : 'border-l-accent/20'} shadow-lg bg-card/50`}>
-      <CardHeader className="flex flex-row items-center justify-between bg-muted/30 py-3 border-b">
+    <Card className={`overflow-hidden transition-all border-l-8 ${isSubmitted ? (isCorrect ? 'border-l-green-500' : 'border-l-destructive') : 'border-l-primary/20'} shadow-xl bg-card`}>
+      <CardHeader className="flex flex-row items-center justify-between bg-muted/30 py-4 border-b">
         <div className="flex items-center gap-3">
-          <Badge className="h-8 w-8 flex items-center justify-center rounded-lg font-black bg-accent text-accent-foreground">{index}</Badge>
-          <Badge variant="outline" className="uppercase text-[10px] tracking-widest font-black border-accent/30 text-accent-foreground">
-            {type === 'A' ? 'Certo/Errado' : 'Múltipla Escolha'}
+          <Badge className="h-8 w-8 flex items-center justify-center rounded-lg font-black bg-primary text-primary-foreground shadow-md">{index}</Badge>
+          <Badge variant="outline" className="uppercase text-[10px] font-black tracking-widest border-primary/20">
+            {type === 'A' ? 'JULGAMENTO (C/E)' : 'MÚLTIPLA ESCOLHA'}
           </Badge>
         </div>
         {isSubmitted && (
-           <Badge variant={isCorrect ? "default" : "destructive"} className="font-bold flex gap-1">
-            {isCorrect ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-            {isCorrect ? "Acertou" : "Errou"}
+           <Badge variant={isCorrect ? "default" : "destructive"} className="font-black px-4 animate-in slide-in-from-right-2">
+            {isCorrect ? "ACERTOU!" : "ERROU"}
            </Badge>
         )}
       </CardHeader>
       
-      <CardContent className="pt-6 space-y-6">
-        <div className="text-lg leading-relaxed font-bold text-foreground whitespace-pre-wrap">
+      <CardContent className="pt-8 pb-8 space-y-8">
+        <div className="text-xl leading-relaxed font-bold text-foreground whitespace-pre-wrap">
           {question}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {type === 'A' ? (
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 variant="outline" 
-                className={`flex-1 h-14 text-lg font-bold border-2 transition-all ${isSubmitted && correctAnswer === 'C' ? 'bg-green-500 border-green-600 text-white hover:bg-green-500' : ''} ${isSubmitted && selectedAnswer === 'C' && correctAnswer !== 'C' ? 'bg-destructive border-destructive text-white hover:bg-destructive' : ''} ${!isSubmitted && selectedAnswer === 'C' ? 'border-accent bg-accent/10' : 'border-accent/10'}`}
+                className={`flex-1 h-16 text-lg font-black border-2 transition-all active:scale-95 ${isSubmitted && correctAnswer === 'C' ? 'bg-green-500 border-green-600 text-white hover:bg-green-500' : ''} ${isSubmitted && selectedAnswer === 'C' && correctAnswer !== 'C' ? 'bg-destructive border-destructive text-white hover:bg-destructive' : ''} ${!isSubmitted && selectedAnswer === 'C' ? 'border-primary bg-primary/10' : 'border-primary/10'}`}
                 onClick={() => handleSelection('C')}
                 disabled={isSubmitted}
               >
-                <ThumbsUp className="mr-2 h-5 w-5" /> Certo
+                <ThumbsUp className="mr-2 h-6 w-6" /> CERTO
               </Button>
               <Button 
                 variant="outline" 
-                className={`flex-1 h-14 text-lg font-bold border-2 transition-all ${isSubmitted && correctAnswer === 'E' ? 'bg-green-500 border-green-600 text-white hover:bg-green-500' : ''} ${isSubmitted && selectedAnswer === 'E' && correctAnswer !== 'E' ? 'bg-destructive border-destructive text-white hover:bg-destructive' : ''} ${!isSubmitted && selectedAnswer === 'E' ? 'border-accent bg-accent/10' : 'border-accent/10'}`}
+                className={`flex-1 h-16 text-lg font-black border-2 transition-all active:scale-95 ${isSubmitted && correctAnswer === 'E' ? 'bg-green-500 border-green-600 text-white hover:bg-green-500' : ''} ${isSubmitted && selectedAnswer === 'E' && correctAnswer !== 'E' ? 'bg-destructive border-destructive text-white hover:bg-destructive' : ''} ${!isSubmitted && selectedAnswer === 'E' ? 'border-primary bg-primary/10' : 'border-primary/10'}`}
                 onClick={() => handleSelection('E')}
                 disabled={isSubmitted}
               >
-                <ThumbsDown className="mr-2 h-5 w-5" /> Errado
+                <ThumbsDown className="mr-2 h-6 w-6" /> ERRADO
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid gap-3">
               {options?.map((opt, i) => {
                 const letter = String.fromCharCode(65 + i);
                 const isOptionCorrect = letter === correctAnswer;
@@ -102,17 +101,16 @@ export function QuestionCard({
                   <div 
                     key={i} 
                     onClick={() => handleSelection(letter)}
-                    className={`flex items-center space-x-3 rounded-xl border-2 p-4 transition-all ${
+                    className={`flex items-center space-x-4 rounded-xl border-2 p-5 transition-all active:scale-[0.98] ${
                     isSubmitted 
-                      ? (isOptionCorrect ? 'bg-green-500/10 border-green-500' : isOptionSelected ? 'bg-destructive/10 border-destructive' : 'opacity-60')
-                      : 'border-accent/10 hover:border-accent/40 cursor-pointer active:scale-[0.99]'
+                      ? (isOptionCorrect ? 'bg-green-500/10 border-green-500 shadow-sm' : isOptionSelected ? 'bg-destructive/10 border-destructive' : 'opacity-60 grayscale-[0.5]')
+                      : 'border-muted/50 hover:border-primary/40 cursor-pointer hover:bg-muted/10'
                   }`}>
-                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSubmitted && isOptionCorrect ? 'bg-green-500 border-green-500' : 'border-accent/30'}`}>
-                      {isSubmitted && isOptionCorrect && <CheckCircle2 className="h-4 w-4 text-white" />}
-                      {!isSubmitted && selectedAnswer === letter && <div className="h-2.5 w-2.5 rounded-full bg-accent" />}
+                    <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 font-black text-sm ${isSubmitted && isOptionCorrect ? 'bg-green-500 border-green-500 text-white' : 'border-primary/30 text-primary'}`}>
+                      {isSubmitted && isOptionCorrect ? <CheckCircle2 className="h-5 w-5" /> : letter}
                     </div>
-                    <Label className="flex-1 cursor-pointer font-bold text-sm md:text-base">
-                      <span className="text-accent mr-2 font-black">{letter})</span> {opt}
+                    <Label className="flex-1 cursor-pointer font-bold text-base leading-snug">
+                       {opt}
                     </Label>
                   </div>
                 );
@@ -123,30 +121,30 @@ export function QuestionCard({
       </CardContent>
 
       {isSubmitted && (
-        <CardFooter className="flex flex-col gap-4 bg-muted/10 border-t p-6 animate-in slide-in-from-top-2 duration-300">
-          <div className="w-full space-y-4">
-            <div className="bg-card dark:bg-zinc-900/50 p-5 rounded-xl shadow-inner border-2 border-accent/10 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-accent">
-                  <Info className="h-4 w-4" />
-                  <h5 className="font-black uppercase text-[10px] tracking-widest">Justificativa Comentada</h5>
+        <CardFooter className="flex flex-col gap-6 bg-muted/10 border-t p-8 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-full space-y-6">
+            <div className="bg-card dark:bg-zinc-900/50 p-6 rounded-2xl shadow-inner border-2 border-primary/10 space-y-4">
+              <div className="flex items-center justify-between border-b pb-3 border-primary/5">
+                <div className="flex items-center gap-2 text-primary">
+                  <Info className="h-5 w-5" />
+                  <h5 className="font-black uppercase text-[10px] tracking-widest">Gabarito Comentado</h5>
                 </div>
                 
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-8 text-[10px] gap-2 font-black border-accent/20 text-accent hover:bg-accent hover:text-white transition-all"
+                  className="h-9 px-4 text-[10px] gap-2 font-black border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                   onClick={handleVerifySource}
                   disabled={!pdfUrl}
                 >
-                  <FileSearch className="h-3 w-3" />
+                  <FileSearch className="h-4 w-4" />
                   VERIFICAR FONTES (PÁG. {sourcePage})
                 </Button>
               </div>
               
-              <p className="text-sm leading-relaxed text-foreground/90 font-medium italic whitespace-pre-wrap">
+              <div className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium italic whitespace-pre-wrap">
                 {justification}
-              </p>
+              </div>
             </div>
           </div>
         </CardFooter>
