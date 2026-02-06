@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Info, ThumbsUp, ThumbsDown, FileSearch } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface QuestionCardProps {
   index: number;
@@ -17,6 +16,7 @@ interface QuestionCardProps {
   justification: string;
   sourcePage: number;
   type: 'A' | 'C';
+  pdfUrl?: string | null;
   onAnswered: (isCorrect: boolean, selected: string) => void;
 }
 
@@ -28,6 +28,7 @@ export function QuestionCard({
   justification, 
   sourcePage, 
   type,
+  pdfUrl,
   onAnswered 
 }: QuestionCardProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -38,6 +39,12 @@ export function QuestionCard({
     setSelectedAnswer(value);
     setIsSubmitted(true);
     onAnswered(value === correctAnswer, value);
+  };
+
+  const handleVerifySource = () => {
+    if (pdfUrl) {
+      window.open(`${pdfUrl}#page=${sourcePage}`, '_blank');
+    }
   };
 
   const isCorrect = selectedAnswer === correctAnswer;
@@ -125,19 +132,16 @@ export function QuestionCard({
                   <h5 className="font-black uppercase text-[10px] tracking-widest">Justificativa Comentada</h5>
                 </div>
                 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="text-accent gap-2 font-black border-accent/20 cursor-help">
-                        <FileSearch className="h-3 w-3" />
-                        Pág. {sourcePage}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-accent text-accent-foreground font-bold">
-                      Referência extraída da página {sourcePage} do seu PDF original.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 text-[10px] gap-2 font-black border-accent/20 text-accent hover:bg-accent hover:text-white transition-all"
+                  onClick={handleVerifySource}
+                  disabled={!pdfUrl}
+                >
+                  <FileSearch className="h-3 w-3" />
+                  VERIFICAR FONTES (PÁG. {sourcePage})
+                </Button>
               </div>
               
               <p className="text-sm leading-relaxed text-foreground/90 font-medium italic whitespace-pre-wrap">
