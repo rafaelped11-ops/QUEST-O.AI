@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText } from "lucide-react";
+import { Loader2, Sparkles, Pencil, BrainCircuit, CheckCircle2, XCircle, ChevronLeft, BarChart3, ListChecks, Save, RefreshCcw, ArrowRight, FileText, CloudUpload, Monitor } from "lucide-react";
 import { QuestionCard } from "@/components/question-card";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import { useUser, useFirestore } from "@/firebase";
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { extractTextFromPdf } from "@/lib/pdf-actions";
+import { AuthModal } from "./auth-modal";
 
 export function GeneratorView() {
   const { user } = useUser();
@@ -39,6 +41,7 @@ export function GeneratorView() {
   const [answers, setAnswers] = useState<Record<number, { isCorrect: boolean, selected: string }>>({});
   const [isFinished, setIsFinished] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   // Essay states
   const [essayTopics, setEssayTopics] = useState<any[]>([]);
@@ -157,28 +160,35 @@ export function GeneratorView() {
     return { correct: correctCount, score: scoreValue.toFixed(1) };
   }, [answers, results, questionType]);
 
-  const saveToHistory = () => {
+  const saveToHistory = (mode: 'local' | 'cloud') => {
     if (hasSaved) return;
+    if (mode === 'cloud' && !user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const id = Date.now().toString();
-    const newItem = {
+    const questionnaireData = {
       id,
       name: file?.name || "Entrada Manual",
-      type: results?.[0]?.type || questionType,
-      date: new Date().toISOString(),
+      questionType: results?.[0]?.type || questionType,
+      creationDate: new Date().toISOString(),
       count: results?.length || 0,
-      score: stats.score,
+      score: Number(stats.score),
+      userId: user?.uid || 'guest'
     };
 
-    const current = JSON.parse(localStorage.getItem("study_history") || "[]");
-    localStorage.setItem("study_history", JSON.stringify([newItem, ...current]));
-
-    if (user && db) {
+    if (mode === 'local') {
+      const current = JSON.parse(localStorage.getItem("study_history") || "[]");
+      localStorage.setItem("study_history", JSON.stringify([questionnaireData, ...current]));
+      toast({ title: "Salvo no navegador!" });
+    } else if (user && db) {
       const docRef = doc(db, "users", user.uid, "questionnaires", id);
-      setDocumentNonBlocking(docRef, { ...newItem, userId: user.uid, createdAt: serverTimestamp() }, { merge: true });
+      setDocumentNonBlocking(docRef, { ...questionnaireData, createdAt: serverTimestamp() }, { merge: true });
+      toast({ title: "Sincronizado na nuvem!" });
     }
     
     setHasSaved(true);
-    toast({ title: "Questionário salvo!" });
   };
 
   if (isQuizMode && results) {
@@ -228,15 +238,33 @@ export function GeneratorView() {
                 </div>
               </div>
             </CardContent>
-            <CardContent className="flex flex-col sm:flex-row gap-4 justify-center pb-8 border-t pt-8 bg-muted/10">
-              <Button onClick={() => setIsQuizMode(false)} variant="outline" className="gap-2 font-black h-12">
-                <RefreshCcw className="h-4 w-4" /> Novo Questionário
+            
+            <div className="px-8 pb-8 space-y-4">
+              <p className="text-center text-xs font-black text-muted-foreground uppercase tracking-widest">Deseja salvar este resultado?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button 
+                  onClick={() => saveToHistory('local')} 
+                  disabled={hasSaved} 
+                  variant="outline" 
+                  className="h-12 font-black gap-2 border-primary/20"
+                >
+                  <Monitor className="h-4 w-4" /> {hasSaved ? "Salvo" : "Salvar no Navegador"}
+                </Button>
+                <Button 
+                  onClick={() => saveToHistory('cloud')} 
+                  disabled={hasSaved} 
+                  className="h-12 font-black gap-2 bg-accent text-accent-foreground shadow-md"
+                >
+                  <CloudUpload className="h-4 w-4" /> {user ? (hasSaved ? "Sincronizado" : "Sincronizar na Nuvem") : "Entrar e Salvar na Nuvem"}
+                </Button>
+              </div>
+              
+              <Button onClick={() => setIsQuizMode(false)} variant="ghost" className="w-full gap-2 font-black h-12 text-primary hover:bg-primary/5">
+                <RefreshCcw className="h-4 w-4" /> Gerar Novo Questionário
               </Button>
-              <Button onClick={saveToHistory} disabled={hasSaved} className="gap-2 font-black h-12 bg-accent text-accent-foreground">
-                <Save className="h-4 w-4" /> {hasSaved ? "Salvo" : "Salvar no Histórico"}
-              </Button>
-            </CardContent>
+            </div>
           </Card>
+          <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         </div>
       );
     }
@@ -260,7 +288,7 @@ export function GeneratorView() {
 
         <div className="animate-in slide-in-from-right-4 duration-300">
           <QuestionCard 
-            key={currentIdx} // Importante para resetar o estado do card entre questões
+            key={currentIdx}
             index={currentIdx + 1} 
             question={currentQuestion.text} 
             options={currentQuestion.options}
@@ -377,8 +405,11 @@ export function GeneratorView() {
                   .then(res => {
                     if (res && res.questions) {
                       setResults(res.questions);
+                      setAnswers({});
                       setCurrentIdx(0);
                       setIsQuizMode(true);
+                      setIsFinished(false);
+                      setHasSaved(false);
                     }
                   })
                   .finally(() => setLoading(false));
@@ -390,7 +421,6 @@ export function GeneratorView() {
         </TabsContent>
 
         <TabsContent value="discursiva">
-          {/* Módulo de Redação */}
           <Card className="border-none shadow-xl bg-card ring-1 ring-primary/10">
             <CardHeader>
               <CardTitle className="text-xl font-black">Módulo de Redação (Discursivas)</CardTitle>
@@ -515,6 +545,7 @@ export function GeneratorView() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 }
